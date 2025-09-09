@@ -1,0 +1,12 @@
+Package: VaccineValidateR
+Type: Package
+Title: Vaccine Validator For United States Childhood Immunization Schedules
+Version: 0.0.1.0
+Date: 2025-03-11
+Author: Jeremy J Michel <michelj@chop.edu>
+Maintainer: Jeremy J Michel <michelj@chop.edu>
+License: use_gpl_license()
+Description: Validation script for childhood immunizations data sets as per ACIP guidance and immunize.org interpretations.
+Imports:
+	data.table,
+	lubridate

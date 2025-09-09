@@ -1,0 +1,16 @@
+# Generated NAMESPACE for your package
+
+# Import specific functions from data.table to avoid loading the entire package globally
+importFrom(data.table, data.table)
+importFrom(data.table, setnames)
+importFrom(data.table, rbindlist)
+#importFrom(data.table, merge)
+#importFrom(data.table, unique)
+importFrom(data.table, `:=`)
+
+# Export main function
+export(select_immunizations)
+
+# Export any helper functions if you define them
+# export(helper_function_1)
+# export(helper_function_2)

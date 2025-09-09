@@ -1,0 +1,9 @@
+.Rhistory
+.Rdata
+.Rproj.user/
+*.Rout
+*.log
+# Ignore data files
+data/
+# Ignore generated results
+results/
