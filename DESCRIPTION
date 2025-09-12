@@ -1,12 +1,24 @@
 Package: VaccineValidateR
 Type: Package
-Title: Vaccine Validator For United States Childhood Immunization Schedules
+Title: Vaccine Validator for United States Childhood Immunization Schedules
 Version: 0.0.1.0
-Date: 2025-03-11
+Date: 2025-09-11
 Author: Jeremy J Michel <michelj@chop.edu>
 Maintainer: Jeremy J Michel <michelj@chop.edu>
-License: use_gpl_license()
-Description: Validation script for childhood immunizations data sets as per ACIP guidance and immunize.org interpretations.
+License: GPL-3
+Description: 
+    VaccineValidateR provides tools to clean, standardize, and validate childhood immunization data 
+    according to US ACIP recommendations and immunize.org guidance. The package allows mapping 
+    local immunization codes to CVX codes, selecting immunizations of interest, and filtering data 
+    for analysis. It supports evaluation of dose validity, series completion, and timing checks 
+    for routine and catch-up childhood vaccines, including COVID-19, Influenza, Tetanus, HIB, 
+    PCV, Polio, and other common antigens. The package facilitates reproducible and transparent 
+    vaccine data validation workflows for research and clinical quality improvement.
 Imports:
-	data.table,
-	lubridate
+    data.table,
+    lubridate
+Encoding: UTF-8
+RoxygenNote: 7.3.3
+URL: https://psyllix.github.io/VaccineValidateR
+BugReports: https://github.com/psyllix/VaccineValidateR/issues
+

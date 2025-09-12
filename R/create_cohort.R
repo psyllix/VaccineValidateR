@@ -1,31 +1,55 @@
 .datatable.aware = TRUE
-#' This function generates a cohort list from a dataset containing patient identifiers and 
-#' dates of birth. It validates the presence of required columns, optionally renames them, 
-#' ensures date consistency, and calculates age in both days and years. 
-#' 
-#' @param source_data data.table with at least a patient identifier and a date of birth column.
-#' @param date_of_birth_column_name Name of the DOB column in 'source_data'. Default = "DOB".
-#' @param study_id_column_name Name of the patient identifier column. Default = "STUDY_ID".
-#' @param reference_date Optional Date to use for age calculation. Default = today's date.
-#' @param verbose Logical. Whether to print progress messages. Default = TRUE.
+
+#' Generate Cohort List with Age Calculations
 #'
-#' @return data.table with unique patients, DOB (as Date), AGE_DAYS, and AGE_YEARS
+#' This function generates a cohort list from a dataset containing patient identifiers and 
+#' dates of birth. It validates required columns, optionally renames them, ensures date consistency, 
+#' and calculates age in both days and years.
+#'
+#' @param patients A \code{data.table} containing at least patient identifiers and date of birth.
+#' @param date_of_birth_column_name String. Name of the DOB column in \code{patients}. Default is \code{"DOB"}.
+#' @param study_id_column_name String. Name of the patient identifier column. Default is \code{"STUDY_ID"}.
+#' @param reference_date Optional. A \code{Date} used for age calculation. Default is \code{Sys.Date()}.
+#' @param verbose Logical. Whether to print progress messages. Default is \code{TRUE}.
+#' 
+#' @examples
+#' library(data.table)
+#'
+#' # Example patient data
+#' dt <- data.table(
+#'   STUDY_ID = c(1, 2, 3),
+#'   DOB = c("2020-01-15", "2019/07/30", "15-Mar-2018")
+#' )
+#'
+#' # Create cohort with default reference date (today)
+#' cohort <- create_cohort(dt)
+#' print(cohort)
+#'
+#' # Specify a fixed reference date for reproducibility
+#' cohort_fixed <- create_cohort(dt, reference_date = as.Date("2025-01-01"))
+#' print(cohort_fixed)
+#' @return A \code{data.table} with one row per patient, including:
+#'   \itemize{
+#'     \item \code{DOB}: earliest date of birth (as Date)
+#'     \item \code{AGE_DAYS}: age in days at \code{reference_date}
+#'     \item \code{AGE_YEARS}: age in years (decimal, using YEAR_LENGTH)
+#'   }
 #' @export
 
-create_cohort<-function(source_data,date_of_birth_column_name='DOB',study_id_column_name='STUDY_ID',reference_date=NA,verbose=TRUE){
-  source_data<-data.table::copy(source_data)
+create_cohort<-function(patients,date_of_birth_column_name='DOB',study_id_column_name='STUDY_ID',reference_date=Sys.Date(),verbose=TRUE){
+  patients<-data.table::setDT(data.table::copy(patients))
   if(verbose) message("Starting patient cohort list development. Data validation step...")
   #validate the study id column name
-  if(!study_id_column_name %in% colnames(source_data)){
+  if(!study_id_column_name %in% colnames(patients)){
     stop("Source data table requires a patient identifier column name to create a patient list. Default is STUDY_ID, otherwise please specify.")
   }else if(study_id_column_name!='STUDY_ID'){
-    source_data<-source_data[,STUDY_ID:=get(study_id_column_name)]
+    patients<-patients[,STUDY_ID:=get(study_id_column_name)]
   }
   #validate the DOB column name
-  if(!date_of_birth_column_name %in% colnames(source_data)){
-      stop("Source data table requires a data of birth column name to create a patient list. Default is DOB, otherwise please specify")
+  if(!date_of_birth_column_name %in% colnames(patients)){
+      stop("Source data table requires a date of birth column name to create a patient list. Default is DOB, otherwise please specify")
   }else if(date_of_birth_column_name!='DOB'){
-    source_data<-source_data[,DOB:=get(date_of_birth_column_name)]
+    patients<-patients[,DOB:=get(date_of_birth_column_name)]
   }
   # Ensure reference date is valid
   if (is.na(reference_date)) {
@@ -34,14 +58,27 @@ create_cohort<-function(source_data,date_of_birth_column_name='DOB',study_id_col
     stop("reference_date must be a Date.")
   }
   
-  #create the cohort with DOB returned as a date and age in days/years calculated from the time point
-  if (verbose) message("Data validated. Generating cohort.")
-  p<-data.table::as.data.table(source_data[,.(DOB=min(DOB)),by=STUDY_ID])
-  if(!inherits(p$DOB,"Date")){
-    p$DOB <- as.Date(p$DOB,format="%Y-%m-%d")
+  
+  # Coerce DOB to Date BEFORE aggregation
+  if (!inherits(patients$DOB, "Date")) {
+    # Try common formats; keep it dependency-free
+    patients[, DOB := as.Date(
+      DOB,
+      tryFormats = c("%Y-%m-%d", "%m/%d/%Y", "%d-%b-%Y", "%Y/%m/%d", "%m-%d-%Y")
+    )]
   }
-  p[,AGE_DAYS:=as.integer(reference_date-DOB)]
-  p[,AGE_YEARS:=AGE_DAYS/365.25]
-  if (verbose) message("Cohort list development complete. N = ", nrow(p))
-  return(p)
+  
+  # Warn & drop rows with unparseable DOB
+  if (anyNA(patients$DOB)) {
+    n_bad <- sum(is.na(patients$DOB))
+    warning("Dropped ", n_bad, " row(s) with missing/unparseable DOB.")
+    patients <- patients[!is.na(DOB)]
+  }
+  #Move onto creating the cohort
+  if (verbose) message("Data validated. Generating cohort.")
+  patients<-data.table::as.data.table(patients[,.(DOB=min(DOB)),by=STUDY_ID])
+  patients[,AGE_DAYS:=as.integer(reference_date-DOB)]
+  patients[,AGE_YEARS:=AGE_DAYS/YEAR_LENGTH]
+  if (verbose) message("Cohort list development complete. N = ", nrow(patients))
+  return(patients)
 }

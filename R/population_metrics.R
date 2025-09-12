@@ -1,16 +1,28 @@
-#' R script to evaluate immunization reports against HEDIS and other measures.
-#' 
-#' @param x SOURCE_NAME.
-#' @param y .
-#' @return The sum of \code{x} and \code{y}.
-#' @examples
+#' Evaluate Population-Level Immunization Metrics
+#'
+#' This function evaluates childhood and adolescent immunization coverage against HEDIS and Non-HEDIS metrics (UTD by Interval/Dose Calculations)
+#' It calculates whether each patient meets specific vaccine coverage criteria (e.g., HPV, Tetanus, MCV, DTaP, PCV, Rota, Influenza) 
+#' for both HEDIS and Non-Hedis (direct calculation) standards based on the provided antigen data at age 13 (HEDIS ADOL) and age 2 (HEDIS CIS).
+#'
+#' @param patients A \code{data.table} of patients with at least a study ID column.
+#' @param antigens A \code{data.table} of validated antigen-level immunization records 
+#'   (output from the validate_immunizations functions) including AGE_IMM_GIVEN, DOSE_COUNTER, and DOSE_COMPLETES_SERIES.
+#' @param date_of_birth_column_name Name of the column in \code{patients} containing patient DOB. Default is 'DOB'.
+#' @param study_id_column_name Name of the column in \code{patients} containing study ID. Default is 'STUDY_ID'.
+#' @param verbose Logical indicating whether to print log messages. Default is \code{TRUE}.
+#' @return The \code{patients} data.table with additional columns for each HEDIS and UTD metric, 
+#'   including adolescent and young child measures (e.g., HEDIS_ADOL2, UTD_ADOL2, HEDIS_CIS10, UTD_CIS10).
+#' @export
 
-
-population_metrics<-function(patients,antigens,date_of_birth_column_name='DOB',study_id_column_name='STUDY_ID'){
-  #SUPPORT FUNCTIONS
-  max0<-function(x,na.rm = TRUE){as.numeric(if(!is.infinite(suppressWarnings(max(x,na.rm=TRUE)))){max(x,na.rm=TRUE)}else {0})}
-  yr_no_grace <-function(x) {yr_with_grace(x,grace=0)}
-  yr_with_grace<-function(x,grace=4) {floor(365.25*x)-grace}
+population_metrics<-function(patients,antigens,date_of_birth_column_name='DOB',study_id_column_name='STUDY_ID',verbose=TRUE){
+  if (verbose) message("Starting with validation checks.")
+  #validation step
+  check_antigen_table(antigens)
+  patients <- data.table::setDT(data.table::copy(patients))
+  #antigens table is never modified, no need to create local copy
+  if (verbose) message("Validation complete. Starting population-level immunization metric evaluation at ", lubridate::now())
+  # --- Adolescent Metrics ---
+  if (verbose) message("Calculating HEDIS and UTD Adolescent metrics...")
   
   #HEDIS ADOLESCENT & UTD ADOLESCENT
   patients[,HPV_HEDIS_ADOL := (STUDY_ID %in% antigens[ANTIGEN=="HPV"&DOSE_COMPLETES_SERIES&AGE_IMM_GIVEN<yr_no_grace(13)]$STUDY_ID)]
@@ -32,6 +44,9 @@ population_metrics<-function(patients,antigens,date_of_birth_column_name='DOB',s
   #These vaccines include DTaP, IPV, MMR, HiB, HepB, VZV, PCV, HepA, RV, and Influenza. 
   #This measure is used to assess the vaccination coverage of children and identify areas where immunization efforts may need to be improved. 
   #Added PCV and HIB SERIES COMPLETE evaluations as an alternative measure since HEDIS is inexact
+  # --- Childhood CIS Metrics ---
+  if (verbose) message("Calculating HEDIS and UTD Childhood CIS metrics...")
+  
   patients[,DTAP_HEDIS_CIS := (STUDY_ID %in% antigens[ANTIGEN=="TETANUS"&DOSE_COUNTER==4&AGE_IMM_GIVEN<yr_no_grace(2)]$STUDY_ID)]
   patients[,DTAP_UTD_CIS := (STUDY_ID %in% antigens[ANTIGEN=="TETANUS"&((AGE_FIRST_DOSE>=yr_no_grace(1)&DOSE_COUNTER==3)|DOSE_COUNTER==4)&AGE_IMM_GIVEN<yr_no_grace(2)]$STUDY_ID)]
   patients[,IPV_HEDIS_CIS := (STUDY_ID %in% antigens[ANTIGEN=="POLIO"&DOSE_COUNTER==3&AGE_IMM_GIVEN<yr_no_grace(2)]$STUDY_ID)]
@@ -55,5 +70,44 @@ population_metrics<-function(patients,antigens,date_of_birth_column_name='DOB',s
   patients[,UTD_CIS7:=(UTD_CIS3&ROTA_HEDIS_CIS)]
   patients[,HEDIS_CIS10:=(HEDIS_CIS7&INFLUENZA_HEDIS_CIS&HEPA_HEDIS_CIS)]
   patients[,UTD_CIS10:=(UTD_CIS7&INFLUENZA_HEDIS_CIS&HEPA_HEDIS_CIS)]
+  if (verbose) {
+    message("Population-level metric definitions (final outputs):")
+    
+    # Childhood measures
+    message("  • HEDIS_CIS2: By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, and 3 HepB (count-based).")
+    message("  • UTD_CIS3: By age 2, child completed: DTaP, Polio, MMR, Varicella, Hib, and HepB series (using completion rules).")
+    
+    message("  • HEDIS_CIS3: By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, 3 HepB, and 4 PCV (count-based).")
+    message("  • UTD_CIS3: By age 2, child completed: DTaP, Polio, MMR, Varicella, Hib, HepB, and PCV series (using completion rules).")
+    
+    message("  • HEDIS_CIS7: By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, 3 HepB, 4 PCV, and Rota series completion (count-based).")
+    message("  • UTD_CIS7: By age 2, child completed: DTaP, Polio, MMR, Varicella, Hib, HepB, PCV, and Rota (all series-completion based).")
+    
+    message("  • HEDIS_CIS10: By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, 3 HepB, 4 PCV, Rota series, 2 Influenza, and 2 HepA (count-based).")
+    message("  • UTD_CIS10: By age 2, child completed: DTaP, Polio, MMR, Varicella, Hib, HepB, PCV, Rota, Influenza (2 doses), and HepA (2-dose series).")
+    
+    # Adolescent measures
+    message("  • HEDIS_ADOL2: By age 13, adolescent received 2 HPV, ≥1 Tetanus dose age 10–13, and ≥1 MCV dose age 11–13 (count-based).")
+    message("  • UTD_ADOL2: By age 13, adolescent completed: HPV (series-based), is up to date on Tetanus (evaluated by series completion rules), and received MCV (≥1 dose age 10–13).")
+    
+    message("Completed evaluation of HEDIS and UTD population metrics at ", lubridate::now())
+  }
+  # Store definitions as an attribute of patients
+  population_metric_definitions <- list(
+    HEDIS_CIS2  = "By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, and 3 HepB (count-based).",
+    UTD_CIS2    = "By age 2, up to date as recommended for: DTaP, Polio, MMR, Varicella, Hib, and HepB series (using completion rules).",
+    HEDIS_CIS3  = "By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, 3 HepB, and 4 PCV (count-based).",
+    UTD_CIS3    = "By age 2, up to date as recommended for: DTaP, Polio, MMR, Varicella, Hib, HepB, and PCV series (using completion rules).",
+    HEDIS_CIS7  = "By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, 3 HepB, 4 PCV, and Rota series completion (count-based).",
+    UTD_CIS7    = "By age 2, up to date as recommended for: DTaP, Polio, MMR, Varicella, Hib, HepB, PCV, and Rota (all series-completion based).",
+    HEDIS_CIS10 = "By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, 3 HepB, 4 PCV, Rota series, 2 Influenza, and 2 HepA (count-based).",
+    UTD_CIS10   = "By age 2, up to date as recommended for: DTaP, Polio, MMR, Varicella, Hib, HepB, PCV, Rota, Influenza (2 doses), and HepA (2-dose series).",
+    HEDIS_ADOL2 = "By age 13, adolescent received 2 HPV, ≥1 Tetanus dose age 10–13, and ≥1 MCV dose age 11–13 (count-based).",
+    UTD_ADOL2   = "By age 13, adolescent up to date as recommended for: HPV (series-based), is up to date on Tetanus (evaluated by series completion rules), and received MCV (≥1 dose age 10–13)."
+  )
+  data.table::setattr(patients, "population_metric_definitions",population_metric_definitions)
+  data.table::setattr(patients, "population_metrics", names(population_metric_definitions))
+  
+  if (verbose) message("Attached metric list as attribute: population_metrics")
   return(patients)
 }

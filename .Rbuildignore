@@ -1,2 +1,9 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.git$                 # Git folder (sometimes added by mistake)
+^\.gitignore$           # Git ignore file
+^README\.Rmd$           # If you have a separate RMarkdown README
+^\.Rhistory$            # R command history
+^\.RData$               # Workspace image
+^tests/testthat/testthat.Rproj$  # any test project files
+^vignettes/.*\.html$    # compiled vignettes

@@ -1,0 +1,102 @@
+````markdown
+---
+title: "Introduction to VaccineValidateR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to VaccineValidateR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+````
+
+# VaccineValidateR
+
+The **VaccineValidateR** package provides tools to clean, standardize, and validate
+childhood immunization data according to US ACIP recommendations and [immunize.org](https://www.immunize.org) guidance.
+
+It supports:
+
+* Mapping local immunization codes to CVX codes
+* Selecting and filtering immunizations of interest
+* Evaluating dose validity, timing, and series completion
+* Generating population-level immunization metrics for research and quality improvement
+
+## Installation
+
+You can install the development version from GitHub:
+
+```r
+# install.packages("devtools")
+devtools::install_github("psyllix/VaccineValidateR")
+```
+
+Then load the package:
+
+```r
+library(VaccineValidateR)
+```
+
+## Workflow Overview
+
+The general workflow for vaccine validation is:
+
+1. **Prepare a cohort** of patients with `create_cohort()`.
+2. **Select immunizations** using `select_immunizations()`.
+3. **Validate immunizations** against ACIP rules using `validation()`.
+4. **Evaluate visits** to identify missed or delayed vaccines with `evaluate_visits()`.
+5. **Generate metrics** for reporting with `population_metrics()`.
+
+## Example
+
+```r
+library(data.table)
+library(VaccineValidateR)
+
+# Example patient data
+patients <- data.table(
+  STUDY_ID = c(1, 2),
+  DOB = as.Date(c("2015-01-01", "2018-05-10"))
+)
+
+# Example immunization data
+immunizations <- data.table(
+  STUDY_ID = c(1, 1, 2),
+  PRODUCT = c("MMR", "DTaP", "Polio"),
+  DATE_GIVEN = as.Date(c("2016-02-01", "2016-03-01", "2019-07-01")),
+  CVX = c(3, 20, 10)
+)
+
+# Step 1: Create cohort
+cohort <- create_cohort(patients)
+
+# Step 2: Select immunizations
+selected <- select_immunizations(
+  immunization_data = immunizations,
+  antigen_to_eval = c("MMR", "TETANUS", "POLIO")
+)
+
+# Step 3: Validate
+validation_results <- validation(selected, patients = cohort)
+
+# Step 4: Evaluate visits
+visit_results <- evaluate_visits(visit_data = immunizations, antigens = validation_results$antigens)
+
+# Step 5: Metrics
+metrics <- population_metrics(patients = cohort, antigens = validation_results$antigens)
+
+head(metrics)
+```
+
+## Conclusion
+
+**VaccineValidateR** enables transparent and reproducible workflows
+for immunization data validation, supporting both research and
+clinical quality improvement initiatives.
+
+```

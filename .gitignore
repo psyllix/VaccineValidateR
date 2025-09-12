@@ -7,3 +7,5 @@
 data/
 # Ignore generated results
 results/
+.Rbuildignore   # ignore your R build ignore file itself
+vignettes/*.html   # compiled vignette outputs

@@ -1,0 +1,53 @@
+# _pkgdown.yml
+
+# ------------------------------------------------------------------
+# Site information
+# ------------------------------------------------------------------
+title: "VaccineValidateR"
+description: "Tools to validate and evaluate childhood immunization data according to US ACIP guidelines."
+url: "https://psyllix.github.io/VaccineValidateR"
+
+# ------------------------------------------------------------------
+# Template settings for offline site
+# ------------------------------------------------------------------
+template:
+  bootstrap: 5
+  # disable downloading external assets, fully offline
+  assets: []
+  offline: true
+  extra_js: []
+  extra_css: []
+
+# ------------------------------------------------------------------
+# Reference section (all exported functions)
+# ------------------------------------------------------------------
+reference:
+  - title: "Functions"
+    desc: "All exported functions in VaccineValidateR."
+    contents:
+      - population_metrics
+      - validate_immunizations
+      - evaluate_visits
+      - create_cohort
+      - select_immunizations
+      - summarize_population_metrics
+      - build_cvx_map
+      - cvx
+      - supported_antigens
+      - update_cvx_map
+      - summarize_visit_evaluations
+
+# ------------------------------------------------------------------
+# Articles / Vignettes
+# ------------------------------------------------------------------
+articles:
+  - title: "Introduction to VaccineValidateR"
+    desc: "Overview and workflow for VaccineValidateR."
+    contents:
+      - intro  # corresponds to vignettes/intro.Rmd
+
+# ------------------------------------------------------------------
+# Development mode (offline compatible)
+# ------------------------------------------------------------------
+development:
+  mode: "release"  # use one of auto, default, release, devel, unreleased
