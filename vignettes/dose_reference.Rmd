@@ -1,4 +1,3 @@
-````markdown
 ---
 title: "Dose Reference Tables"
 output: rmarkdown::html_vignette
@@ -13,9 +12,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-````
-
-````markdown
+```
 
 | Antigen    | Dose Number | Minimum Age | Minimum Interval | Notes                                                                 | Completes Series |
 |------------|------------|------------|----------------|----------------------------------------------------------------------|----------------|

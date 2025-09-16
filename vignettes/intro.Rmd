@@ -1,4 +1,3 @@
-````markdown
 ---
 title: "Introduction to VaccineValidateR"
 output: rmarkdown::html_vignette
@@ -13,7 +12,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-````
+```
 
 # VaccineValidateR
 
@@ -98,5 +97,3 @@ head(metrics)
 **VaccineValidateR** enables transparent and reproducible workflows
 for immunization data validation, supporting both research and
 clinical quality improvement initiatives.
-
-```

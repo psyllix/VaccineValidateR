@@ -14,6 +14,7 @@ template:
   bootstrap: 5
   assets: local
   headroom: false
+  extra_js: []
 
 # ------------------------------------------------------------------
 # Reference section (all exported functions)
