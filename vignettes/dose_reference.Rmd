@@ -1,0 +1,109 @@
+````markdown
+---
+title: "Dose Reference Tables"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Dose Reference Tables}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+````
+
+````markdown
+
+| Antigen    | Dose Number | Minimum Age | Minimum Interval | Notes                                                                 | Completes Series |
+|------------|------------|------------|----------------|----------------------------------------------------------------------|----------------|
+| COVID      | 1          | 6 months   | NA             | None                                                                 | No             |
+| HEPA       | 1          | 1 year     | NA             | None                                                                 | No             |
+| HEPB       | 1          | 0 years    | NA             | None                                                                 | No             |
+| HIB        | 1          | 15 months  | NA             | None                                                                 | Yes            |
+| HIB        | 1          | 6 weeks    | NA             | None                                                                 | No             |
+| HPV        | 1          | 9 years    | NA             | None                                                                 | No             |
+| INFLUENZA  | 1          | 6 months   | NA             | None                                                                 | No             |
+| MCV        | 1          | 16 years   | NA             | None                                                                 | Yes            |
+| MCV        | 1          | 10 years   | NA             | None                                                                 | No             |
+| MENB       | 1          | 16 years   | NA             | Start of SCDM series cannot be delayed                               | No             |
+| MMR        | 1          | 1 year     | NA             | None                                                                 | No             |
+| PCV        | 1          | 2 years    | NA             | None                                                                 | Yes            |
+| PCV        | 1          | 6 weeks    | NA             | None                                                                 | No             |
+| POLIO      | 1          | 6 weeks    | NA             | None                                                                 | No             |
+| ROTA       | 1          | 4 weeks    | NA             | Max age to start: 14w6d                                              | No             |
+| RSV        | 1          | 0 years    | NA             | None                                                                 | Yes            |
+| TETANUS    | 1          | 6 weeks    | NA             | None                                                                 | No             |
+| VZV        | 1          | 1 year     | NA             | None                                                                 | No             |
+
+| Antigen    | Dose Number | Minimum Age | Minimum Interval | Notes                                                                 | Completes Series |
+|------------|------------|------------|----------------|----------------------------------------------------------------------|----------------|
+| COVID      | 2          | 6 months   | 3–4 wks        | Interval depends on first dose brand (Pfizer 3 wk, others 4 wk)      | No             |
+| HEPA       | 2          | 1–19 years | 6 months       | None                                                                 | Yes            |
+| HEPA       | 2          | Adult >19 yr | 6 months     | None                                                                 | Yes            |
+| HEPA       | 2          | Adult >19 yr | 4 wks        | None                                                                 | No             |
+| HIB        | 2          | 15 months  | 8 wks          | None                                                                 | Yes            |
+| HIB        | 2          | 1 year     | 8 wks          | First dose ≥1 yr                                                     | Yes            |
+| HIB        | 2          | 10 weeks   | 4 wks          | None                                                                 | No             |
+| HPV        | 2          | 9 years    | 5 months       | First dose <15 yr                                                    | Yes            |
+| HPV        | 2          | 9 years    | 4 wks          | None                                                                 | No             |
+| INFLUENZA  | 2          | 6 months   | 1 year         | Yearly booster; cannot be delayed                                     | No             |
+| MENB       | 2          | 16 years   | 1 month        | Both doses prior to date of change in guidance | Yes            |
+| MENB       | 2          | 16 years   | 6 months       | Both doses Bexsero                                                    | Yes            |
+| MENB       | 2          | 16 years   | 4 months       | Both doses Bexsero* | No       |
+| MENB       | 2          | 16 years   | 6 months       | Both doses Trumenba                                                   | Yes            |
+| MMR        | 2          | 1 year     | 4 wks          | None                                                                 | Yes            |
+| PCV        | 2          | 1 year     | 8 wks          | None                                                                 | No             |
+| PCV        | 2          | 2 years    | 8 wks          | None                                                                 | Yes            |
+| PCV        | 2          | 10 wk–1 yr | 4 wks          | None                                                                 | No             |
+| POLIO      | 2          | 10 weeks   | 4 wks          | None                                                                 | No             |
+| ROTA       | 2          | 10 weeks   | 4 wks          | Both first and second dose are 2-dose rotavirus                       | Yes            |
+| ROTA       | 2          | 10 weeks   | 4 wks          | None                                                                 | No             |
+| TETANUS    | 2          | 10 weeks   | 4 wks          | None                                                                 | No             |
+| VZV        | 2          | 1 year     | 12 wks         | None                                                                 | Yes            |
+| VZV        | 2          | 13 years   | 4 wks          | None                                                                 | Yes            |
+
+| Antigen    | Dose Number | Minimum Age | Minimum Interval | Notes                                                                 | Completes Series |
+|------------|------------|------------|----------------|----------------------------------------------------------------------|----------------|
+| COVID      | 3          | 6 months   | 4–8 wks        | Interval depends on first dose brand: Pfizer 8 wks, others 4 wks      | Yes            |
+| HEPA       | 3          | 19+ years  | 5 months       | Interval from first dose ≥6 mo                                         | Yes            |
+| HEPB       | 3          | 24 weeks   | 8 wks          | 16 wks from dose 1                                                    | Yes            |
+| HIB        | 3          | 1 year     | 8 wks          | All previous doses are HIB3                                           | Yes            |
+| HIB        | 3          | 12–24 months | 8 wks        | First dose ≥7 mo                                                      | Yes            |
+| HIB        | 3          | 12+ months | 8 wks          | Last dose ≥12 mo                                                      | Yes            |
+| HIB        | 3          | 14 weeks   | 4 wks          | None                                                                 | No             |
+| HPV        | 3          | 9 years    | 12 wks         | Interval from first dose ≥21 wks                                       | Yes            |
+| PCV        | 3          | 24 months  | 8 wks          | None                                                                 | Yes            |
+| PCV        | 3          | 12+ months | 8 wks          | None                                                                 | Yes            |
+| PCV        | 3          | 14 weeks   | 4 wks          | None                                                                 | No             |
+| POLIO      | 3          | 4 years    | 180 days       | None                                                                 | Yes            |
+| POLIO      | 3          | 14 weeks   | 4 wks          | None                                                                 | No             |
+| ROTA       | 3          | 14 weeks   | 4 wks          | None                                                                 | Yes            |
+| TETANUS    | 3          | 10 years   | 180 days       | Adolescent Vaccination                                                | Never Completed|
+| TETANUS    | 3          | 14 weeks   | 4 wks          | None                                                                 | No             |
+
+| Antigen    | Dose Number | Minimum Age | Minimum Interval | Notes                                                                 | Completes Series |
+|------------|------------|------------|----------------|----------------------------------------------------------------------|----------------|
+| HIB        | 4          | 1 year     | 8 wks          | None                                                                 | Yes            |
+| PCV        | 4          | 1 year     | 8 wks          | None                                                                 | Yes            |
+| POLIO      | 4          | 4 years    | 180 days       | None                                                                 | Yes            |
+| TETANUS    | 4          | 10 years   | 180 days       | Adolescent Vaccination                                                | Never Completed|
+| TETANUS    | 4          | 4–6 years  | 180 days       | None                                                                 | No             |
+| TETANUS    | 4          | 7+ years   | 180 days       | None                                                                 | No             |
+| TETANUS    | 4          | 1–6 years  | 4 months       | None                                                                 | No             |
+
+| Antigen    | Dose Number | Minimum Age | Minimum Interval | Notes                                                                 | Completes Series |
+|------------|------------|------------|----------------|----------------------------------------------------------------------|----------------|
+| TETANUS    | 5          | 10 years   | 180 days       | Adolescent Vaccination                                                | Never Completed|
+| TETANUS    | 5          | 4–6 years  | 180 days       | None                                                                 | No             |
+| TETANUS    | 6          | 10 years   | 180 days       | Adolescent Vaccination                                                | Never Completed|
+| TETANUS    | 7          | 10 years   | –              | Adolescent Vaccination                                                | Never Completed|
+
+| Antigen    | Dose Number | Minimum Age | Minimum Interval | Notes                                                                 | Completes Series |
+|------------|------------|------------|----------------|----------------------------------------------------------------------|----------------|
+| COVID      | Yearly     | 6 months   | 8 weeks        | 2024+ logic                                                           | No             |
+| INFLUENZA  | Yearly     | –          | –              | Yearly dose                                                           | No             |
+
+---

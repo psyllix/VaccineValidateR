@@ -7,7 +7,10 @@
 summarize_visit_evaluations(
   visit_output,
   antigens_of_interest = NULL,
-  group_col = NULL,
+  by_year = TRUE,
+  by_antigen = TRUE,
+  group_cols = NULL,
+  percent_var = "PCT_GIVEN_IF_DUE",
   verbose = TRUE,
   output_format = c("long", "wide")
 )
@@ -16,41 +19,47 @@ summarize_visit_evaluations(
 \item{visit_output}{A \code{data.table} returned by \code{evaluate_visits()}.
 Must contain standardized columns defined in \code{VISIT_RETURN_COLUMNS},
 including \code{ANTIGEN}, \code{VISIT_DATE}, \code{DUE}, \code{GIVEN},
-and \code{MISSED}.}
+and \code{MISSED}. Must also have attribute \code{"processed"} set.}
 
 \item{antigens_of_interest}{Character vector of antigen names to include.
 Default is \code{NULL}, in which case all antigens in the data are used.}
 
-\item{group_col}{Optional column name in \code{visit_output} to group by
-(e.g., "SYSTEM" or "SITE"). Default is \code{NULL}, meaning no grouping.}
+\item{by_year}{Logical; if \code{TRUE}, group by VISIT_YEAR. Default \code{TRUE}.}
+
+\item{by_antigen}{Logical; if \code{TRUE}, group by ANTIGEN. Default \code{TRUE}.}
+
+\item{group_cols}{Optional character vector of additional grouping column names.}
+
+\item{percent_var}{Character; which percentage column to pivot on in wide format.
+Default is \code{"PCT_GIVEN_IF_DUE"}. Other valid options are
+\code{"PCT_MISSED_IF_DUE"}, \code{"PCT_WITHIN_15_DAYS_IF_MISSED"},
+\code{"PCT_WITHIN_30_DAYS_IF_MISSED"}, \code{"PCT_WITHIN_90_DAYS_IF_MISSED"}.}
 
 \item{verbose}{Logical; if \code{TRUE}, progress messages are printed.
 Default is \code{TRUE}.}
 
 \item{output_format}{Either \code{"long"} (default; stacked rows with antigen
-labels) or \code{"wide"} (one row per year, antigens as columns).}
+labels) or \code{"wide"} (one row per group, antigens as columns).}
 }
 \value{
 A \code{data.table} summarizing the requested antigens:
   \itemize{
-    \item In "long" format: one row per antigen-year-group with counts,
-      percents, and antigen labels.
-    \item In "wide" format: one row per evaluation year (and group if
-      specified), columns for each antigen.
+    \item In "long" format: one row per group with counts, percents, and labels.
+    \item In "wide" format: one row per grouping set, columns for each antigen.
   }
 }
 \description{
-This function summarizes the output from \code{evaluate_visits()}, producing
-counts and percentages of visits where vaccines were due, given, or missed,
-grouped by antigen, year, and optionally a grouping column (e.g., system or subset).
+Summarize output from \code{evaluate_visits()}, producing counts and
+percentages of visits where vaccines were due, given, or missed. Grouping
+can be flexibly specified with flags and additional grouping columns.
 }
 \examples{
-# Suppose visit_output is from evaluate_visits()
+# Summarize all antigens, grouped by year and antigen
 summarize_visit_evaluations(visit_output)
 
-# Only summarize Polio and Hib, grouped by SYSTEM
+# Group only by SYSTEM and SITE (no year, no antigen), wide format by missed\%
 summarize_visit_evaluations(visit_output,
-                            antigens_of_interest = c("POLIO","HIB"),
-                            group_col = "SYSTEM")
+  by_year = FALSE, by_antigen = FALSE, group_cols = c("SYSTEM","SITE"),
+  output_format = "wide", percent_var = "PCT_MISSED_IF_DUE")
 
 }
