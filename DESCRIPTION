@@ -21,4 +21,6 @@ Encoding: UTF-8
 RoxygenNote: 7.3.3
 URL: https://psyllix.github.io/VaccineValidateR
 BugReports: https://github.com/psyllix/VaccineValidateR/issues
-
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
