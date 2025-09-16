@@ -70,7 +70,7 @@ result <- VaccineValidateR::validation(data)
 
 # Check antigen-level results
 head(result$antigens)
-
+```
 ### Status
 
 This package is updated in response to changes in ACIP rules yearly (and sometimes more frequently).
