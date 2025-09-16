@@ -94,4 +94,4 @@ See the GNU General Public License for details.
 ### Dose Calculation Tables (For Reference)
 
 These tables summarize **minimum ages, intervals, and series-completion rules** for common antigens.
-Detailed dose timing and series completion tables are provided in the [dose reference vignette](articles/dose_reference.html).
+Detailed dose timing and series completion tables are provided in the [dose reference vignette](/docs/articles/dose_reference.html).
