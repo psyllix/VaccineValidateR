@@ -5,7 +5,7 @@ Version: 0.0.1.0
 Date: 2025-09-11
 Author: Jeremy J Michel <michelj@chop.edu>
 Maintainer: Jeremy J Michel <michelj@chop.edu>
-License: GPL-3
+License: BSD-2
 Description: 
     VaccineValidateR provides tools to clean, standardize, and validate childhood immunization data 
     according to US ACIP recommendations and immunize.org guidance. The package allows mapping 
@@ -16,7 +16,7 @@ Description:
     vaccine data validation workflows for research and clinical quality improvement.
 Imports:
     data.table,
-    lubridate
+    fasttime
 Encoding: UTF-8
 RoxygenNote: 7.3.3
 URL: https://psyllix.github.io/VaccineValidateR

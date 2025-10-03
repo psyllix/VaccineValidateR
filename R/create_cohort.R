@@ -62,10 +62,7 @@ create_cohort<-function(patients,date_of_birth_column_name='DOB',study_id_column
   # Coerce DOB to Date BEFORE aggregation
   if (!inherits(patients$DOB, "Date")) {
     # Try common formats; keep it dependency-free
-    patients[, DOB := as.Date(
-      DOB,
-      tryFormats = c("%Y-%m-%d", "%m/%d/%Y", "%d-%b-%Y", "%Y/%m/%d", "%m-%d-%Y")
-    )]
+    make_a_date(patients,"DOB")
   }
   
   # Warn & drop rows with unparseable DOB

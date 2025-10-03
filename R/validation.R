@@ -10,7 +10,7 @@
 #' Default column names can be overwritten using the individual parameters. Please use the same column names across files!
 #'
 #' @param immunization_data A \code{data.table} of immunizations containing at minimum \code{STUDY_ID}, \code{PRODUCT}, and either \code{DATE_GIVEN} or \code{AGE_IMM_GIVEN}. 
-#'   If there is no patient table, a \code{DOB} column is required. \code{CVX}, \code{GIVEN_STATUS}, and \code{ADMIN_LOCATION} columns are optional.
+#'   If there is no patient table, a \code{DOB} column is required. \code{CVX}.
 #' @param patients Optional \code{data.table} of patient info, with DOB. 
 #'   Default is \code{NULL}, in which case DOB must be present in \code{visit_data}.
 #' @param lim_cvx_map Optional \code{data.table} mapping local immunization identifiers (\code{LIM}) to CVX codes. Required if \code{CVX} is not present in the immunization data. Must include \code{PRODUCT} and \code{CVX}.
@@ -51,7 +51,7 @@
 #' }
 #' @export
   validate_immunizations <- function(immunization_data
-                         ,patients
+                         ,patients=NULL
                          ,lim_cvx_map
                          ,antigen_to_eval=c('ALL')
                          ,verbose = TRUE
@@ -65,20 +65,27 @@
                          ,reference_date=Sys.Date()
                          ){
       #Initialization
+      
+      if(verbose){message(paste0("Starting validatation of: ",immunization_data[,.N]," immunization @",Sys.time()))}
       immunization_data<-data.table::setDT(data.table::copy(immunization_data))
+      #pull attributes immediately to get submitted values
+      processed_attr <- attr(immunization_data, "processed")
+      antigens_used  <- attr(immunization_data, "antigens_used")
       antigen_to_eval <- toupper(antigen_to_eval)
+      
       #Validation
-      if(verbose){message(paste0("Starting validate_immunizations of: ",immunization_data[,.N]," immunization @",lubridate::now()))}
       if(verbose) message("validation of immunizations may take some time depending on your data and system.")
       if(verbose){message("Please wait.... Status updates will occur routinely if verbose is True.")}
       
       #Check for study id 
       if(!study_id_column_name %in% colnames(immunization_data)){stop("Column for study ID is required in immunization_data. Either use STUDY_ID or declare the column name. Must be the same accross files.")}
-      if(study_id_column_name!='STUDY_ID'){immunization_data[,STUDY_ID:=get(study_id_column_name)]}
+      if(study_id_column_name!='STUDY_ID'){data.table::setnames(immunization_data,study_id_column_name,"STUDY_ID")}
       
       #Check for Product
       if(!immunization_product_name_column_name %in% colnames(immunization_data)){stop("Column for product name is required. Product names are used for disambinuation. Either use PRODUCT or declare the product column name.")}
-      if(immunization_product_name_column_name!='PRODUCT'){immunization_data[,PRODUCT:=get(immunization_product_name_column_name)]}
+      if(immunization_product_name_column_name!='PRODUCT'){
+        data.table::setnames(immunization_data,immunization_product_name_column_name,"PRODUCT")
+      }
   
       #Product Codes/LIM validate_immunizations
       if (!immunization_code_column_name %in% names(immunization_data)) {
@@ -92,84 +99,102 @@
                local_immunization_identifier_column_name, " and ", immunization_code_column_name)
         }
       }
-      #map immunization DOB if it is a column of immunization data
-      if(date_of_birth_column_name %in% colnames(immunization_data)){
-        if(date_of_birth_column_name!='DOB'){
-          immunization_data<-immunization_data[,DOB:=get(date_of_birth_column_name)]
-        }
-        if(!inherits(immunization_data$DOB,'Date')){
-          immunization_data[,DOB := as.Date(DOB,format="%Y-%m-%d")]
-        }
-      }
-      #DOB validate_immunizations and column name coordination
-      else if (!is.null(patients)){
-        if(verbose){message(paste0("Patient data processing started @ ",lubridate::now()))}
+      # ----------------------------
+      # Handle patient DOB in wither imm_data or patient file
+      # ----------------------------
+      
+      if (date_of_birth_column_name %in% names(immunization_data) && inherits(immunization_data[[date_of_birth_column_name]], "Date")) {
+        # Case 1: immunization_data has DOB column already as Date -> trust it
+        if (date_of_birth_column_name != "DOB") {data.table::setnames(immunization_data, date_of_birth_column_name, "DOB")}
+        if (verbose) message("DOB present in immunization_data as Date; patients file not accessed if supplied.")
         
-        #Confirm STUDY_ID
-        if(!study_id_column_name %in% colnames(patients)){stop("Column for study ID is required in patients Either use STUDY_ID or declare the column name. Must be the same accross files.")}
-        if(study_id_column_name!='STUDY_ID'){patients[,STUDY_ID:=get(study_id_column_name)]}
-        #Confirm DOB      
-        if(!date_of_birth_column_name %in% colnames(patients)){
-          stop("Patients requires a DOB column if there is using a patient list.")
-        }
-  
-        if(date_of_birth_column_name!='DOB'){
-          patients<-patients[,DOB:=get(date_of_birth_column_name)]
-          #cast as DOB if needed
-        }
-        if(!inherits(patients$DOB,'Date')){
-          patients[,DOB := as.Date(DOB,format="%Y-%m-%d")]
-        }
-        # Merge patient DOB onto immunizations
+      } else if (!is.null(patients)) {
+        # Case 2: use patients data file to create the date on immunization - it may or may not have a Date format
+        if (verbose) message("Using patient dataset for DOB mapping.")
+        # Ensure STUDY_ID
+        if (!study_id_column_name %in% names(patients)) {stop("Patient data must include a study ID column.")}
+        if (study_id_column_name != "STUDY_ID") {data.table::setnames(patients, study_id_column_name, "STUDY_ID")}
+        # Ensure DOB column
+        if (!date_of_birth_column_name %in% names(patients)) {stop("Patient data must include a DOB column.")}
+        if (date_of_birth_column_name != "DOB") {data.table::setnames(patients, date_of_birth_column_name, "DOB")}
+        # Normalize DOB
+        if (!inherits(patients$DOB, "Date")) {make_a_date(patients,"DOB")} 
+        # Merge
         data.table::setkey(patients, STUDY_ID)
         data.table::setkey(immunization_data, STUDY_ID)
-        immunization_data<-patients[,.(STUDY_ID,DOB)][immunization_data]#merge DOB onto immunizations
-        if(verbose){message(paste0("Patient data processing completed @ ",lubridate::now()))}
+        immunization_data <- patients[immunization_data]
+        if(verbose){message(paste0("DOB mapping completed @",Sys.time()))}
+      } else {
+        # Case 3: derive patients from immunization_data
+        if (!date_of_birth_column_name %in% names(immunization_data)) {stop("Need DOB in immunization_data if no separate patient dataset.")}#no reason to progress
+        
+        if (verbose) message("Deriving DOB from immunization_data (no patient dataset provided) - sub optimal path.")
+        #make patients - never use again
+        patients <- unique(immunization_data[, .(
+          STUDY_ID = get(study_id_column_name),
+          DOB  = get(date_of_birth_column_name)
+        )])
+        #no need to check since if DOB in immunizations was date would not get here
+        make_a_date(patients,"DOB")
+        data.table::setkey(patients, STUDY_ID)
+        data.table::setkey(immunization_data, STUDY_ID)
+        immunization_data <- patients[immunization_data]
+        if(verbose){message(paste0("DOB mapping completed @",Sys.time()))}
       }
-      else{stop("Immunization_data requires a DOB column if there is no patients list included. Otherwise provide a patient list with study ID and DOB column.")}
       
-      if(verbose){message(paste0("Incoming data check passed and patient list exists: ",lubridate::now()))}
+      if(verbose){message(paste0("Incoming data check passed and patient list exists: ",Sys.time()))}
       if(verbose){message(paste0("Starting immunization pre-processing... This may take a few minutes..."))}
       
       ####LIMIT DATA IF DATA FILE ALREADY PROCESSED#####
-      if (is.null(attr(immunization_data, "processed")) ||!isTRUE(attr(immunization_data, "processed"))) {
-        immunization_data<-select_immunizations(immunization_data,antigen_to_eval=antigen_to_eval,verbose=FALSE)
+      if (is.null(processed_attr) ||!isTRUE(processed_attr)) {
+        immunization_data<-select_immunizations(
+          immunization_data,
+          ,antigen_to_eval=antigen_to_eval
+          ,verbose=FALSE
+          ,immunization_date_given_column_name=immunization_date_given_column_name
+          ,age_at_immunization_column_name=age_at_immunization_column_name
+          ,immunization_code_column_name=immunization_code_column_name
+          ,local_immunization_identifier_column_name=local_immunization_identifier_column_name)
         if(verbose){message(paste0("Preprocessing completed."))}
       }
       else{if (verbose) message("Skipping preprocessing — immunization_data already marked as processed.")}
-      if(verbose){message(paste0("Immununization Date processing starting at @ ",lubridate::now()))}
+      # Immunization date processing - preference for Age modifications
+      if(verbose){message(paste0("Immunization Date processing starting at @ ",Sys.time()))}
       
       #now create or format the DATE_GIVEN field - FIRST TIME INTENSIVE PROCESS - PREFER THAT WE GET AGE_IMM_GIVEN, 
       if(age_at_immunization_column_name %in% colnames(immunization_data)){
-        immunization_data[,DATE_GIVEN:=DOB+get(age_at_immunization_column_name)]
-        immunization_data[,AGE_IMM_GIVEN:=get(age_at_immunization_column_name)]
+        if(verbose){message("Optimal path - AGE + patient DOB")}
+        immunization_data[,DATE_GIVEN:=DOB+get(age_at_immunization_column_name)]#automatically gets us dates - no reformatting
+        if (age_at_immunization_column_name != "AGE_IMM_GIVEN"){ 
+          data.table::setnames(immunization_data,age_at_immunization_column_name,"AGE_IMM_GIVEN")
+        }
       } else{
           if(!immunization_date_given_column_name %in% colnames(immunization_data)){stop("Column for age immunization given or date immunization given required in immunization data. Age immunization given is preferred.")}
-          if(immunization_date_given_column_name!='DATE_GIVEN'){immunization_data[,DATE_GIVEN:=get(immunization_date_given_column_name)]}
-          #we need to merge the visit table onto the antigen table 
-          if(!inherits(immunization_data$DATE_GIVEN,'Date')){
-              immunization_data[,DATE_GIVEN := as.Date(DATE_GIVEN,format="%Y-%m-%d")]
-          }
+          if(immunization_date_given_column_name!='DATE_GIVEN'){data.table::setnames(immunization_data,immunization_date_given_column_name,"DATE_GIVEN")}
+          #check if date and make date if not
+          if(!inherits(immunization_data$DATE_GIVEN,'Date')){make_a_date(immunization_data,"DATE_GIVEN")}
+          if(verbose){message("suboptimal path - Date given - DOB")}
           immunization_data[,AGE_IMM_GIVEN:=as.integer(DATE_GIVEN-DOB)]
         }
     gc()
     
-    if(verbose){message("Starting immunization data processing at ",lubridate::now(),". This may take a few minutes...")}
+    if(verbose){message("Starting immunization data processing at ",Sys.time(),". This may take a few minutes...")}
+    
     #### PART 2 #####
     # CONVERT to ANTIGENS from immunization_data and drop tables
-    antigens_list <- SYSTEM_ANTIGENS
+    antigens_list <- antigens_used#from the select_immuniations table - at this point is completed
     
     antigens_v <- lapply(antigens_list, function(ant) {
       dt <- immunization_data[get(ant) == TRUE,
                               .(STUDY_ID, ANTIGEN = ant, DOB, PRODUCT, CVX,
-                                GIVEN_STATUS, ADMIN_LOCATION, DATE_GIVEN, AGE_IMM_GIVEN)
+                                DATE_GIVEN, AGE_IMM_GIVEN)
       ]
       if (nrow(dt) > 0) dt else NULL
     })
     
     antigens <- data.table::rbindlist(antigens_v, use.names = TRUE, fill = TRUE)
     rm(antigens_v)
-    # add rows to Antigens table
+    # add columns to Antigens table
     antigens[, `:=`(
       IS_LIVE        = CVX %in% cvx$LIVE_NON_ENTERAL,
       NOTES          = as.character(NA),
@@ -191,15 +216,16 @@
       LAST_LIVE           = as.numeric(0)
     )]
     ##### DEVELOP ANTIGEN LIST FROM IMMUNIZAITIONS  ####
-    if(verbose){message(paste0("Antigen list developed: ",lubridate::now()))}
+    if(verbose){message(paste0("Antigen list developed: ",Sys.time()))}
     if(verbose){message(paste0("Total antigens (before duplicate removal): ",antigens[,.N]))}
     ##### Clean up From Immunization Processing #####
     rm(immunization_data)
     gc()
     ##### PREPARE ANTIGEN LIST FOR EVALUATION #####
     #Remove all duplication age-antigen combinations
+    if(verbose){message("Extracting data for validation. Please wait...")}
     antigens_count<-data.table::as.data.table(unique(antigens,by=c('STUDY_ID','ANTIGEN','AGE_IMM_GIVEN')))
-    if(verbose){message(paste0("Unique dose administrations extracetd for each antigen: ",lubridate::now()))}
+    if(verbose){message(paste0("Unique dose administrations extracetd for each antigen: ",Sys.time()))}
     if(verbose){message(paste0("Unique dose administrations identifed: ",antigens_count[,.N]))}
     # PREPARE list to collect skipped doses
     skipped_list <- list()
@@ -209,26 +235,37 @@
     if(verbose){message(paste0("Next step is resource intensive. Please Wait...."))}
     #adjust the counter to evaluate dose #1
     #order the table to support assignment of intervals between doses
-    antigens_count<-antigens_count[order(STUDY_ID,ANTIGEN,AGE_IMM_GIVEN)]
+    data.table::setkey(antigens_count, STUDY_ID, ANTIGEN, AGE_IMM_GIVEN)
     #create the antigen variables
     antigens_count[,ADMIN_COUNTER:=seq_len(.N),by=.(STUDY_ID, ANTIGEN)]
     antigens_count[,ABS_ADMIN_COUNTER:=ADMIN_COUNTER]
-    antigens_count[,INTERVAL:=(AGE_IMM_GIVEN-data.table::shift(AGE_IMM_GIVEN,n=1L,type="lag")),by=.(STUDY_ID, ANTIGEN)]#MOST RESOURCE INTENSIVE STEP IN PROCESS
     antigens_count[,TABLE_INDEX:=.I]
-    #PREPARE RETURN storage
-    antigens_valid<-vector("list",7)
+    data.table::setindex(antigens_count,TABLE_INDEX)
+    #calculate the intervals - optimize based on once for whole table than backing out the cross steps
+    antigens_count[, INTERVAL := AGE_IMM_GIVEN - data.table::shift(AGE_IMM_GIVEN)]
+    antigens_count[ADMIN_COUNTER==1, INTERVAL := NA_integer_]# reset first rows in each group
+    if(verbose){message(paste0("There are ",antigens_count[,.N]," remaining @",Sys.time(),". Moving onto preliminary immunization removals."))}
+    
     #create an data set for removed from processing antigens
-    skipped_list[[1]]<-antigens_count[AGE_IMM_GIVEN<0,..INVALID_DOSE_COLUMNS]
-    skipped_list[[1]][,NOTES:="Given before birth."]#information relevant to handling
-    #future immunization dates skippedated
-    skipped_list[[2]]<-antigens_count[AGE_IMM_GIVEN>reference_date,..INVALID_DOSE_COLUMNS]
-    skipped_list[[2]][,NOTES:="Before after date running sample."]#information relevant to handling
+    skipped_group<-antigens_count[AGE_IMM_GIVEN<0]
+    if(nrow(skipped_group)> 0L){
+      skipped_group[,NOTES:="Before birth."]#information relevant to handling
+      skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+      antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+      if(verbose){message("Administrations discarded as before birth doses as of today: ",skipped_group[,.N])}
+    }
+    #future immunization dates skipped
+    skipped_group<-antigens_count[AGE_IMM_GIVEN>reference_date]
+    if(nrow(skipped_group)> 0L){
+      skipped_group[, NOTES := paste0("After ", reference_date)]
+      skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+      antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+      if(verbose){message("Administrations discarded as future doses as of ",reference_date,": ",skipped_group[,.N])}
+    }
     #immunizaitons skipped removed from count
-    if(verbose){message("Administrations discarded as before bith/future doses as of today: ",skipped_list[[1]][,.N],"/",skipped_list[[2]][,.N])}
-    if(verbose){message(paste0("There are ",antigens_count[,.N]," remaining @",lubridate::now(),". Moving onto preliminary immunization removals."))}
-    gc()
+    
     ### PRE-emptive removal of nonlive given before the earliest allowed date. Minimum intervals are retained and removed after live vaccine validate_immunizations
-    skipped_list[[3]]<-antigens_count[(ANTIGEN=="MCV"&AGE_IMM_GIVEN<yr_with_grace(10))|
+    skipped_group<-antigens_count[(ANTIGEN=="MCV"&AGE_IMM_GIVEN<yr_with_grace(10))|
                      (ANTIGEN=="MENB"&AGE_IMM_GIVEN<yr_with_grace(16))|
                      (ANTIGEN=="HEPA"&AGE_IMM_GIVEN<yr_with_grace(1))|
                      (ANTIGEN=="HPV"&AGE_IMM_GIVEN<yr_with_grace(9))|
@@ -238,25 +275,34 @@
                      (ANTIGEN=="ROTA"&AGE_IMM_GIVEN<wk_with_grace(4))|
                      (ANTIGEN=="HIB"&AGE_IMM_GIVEN<wk_with_grace(6))|
                      (ANTIGEN=="POLIO"&AGE_IMM_GIVEN<wk_with_grace(6))|
-                     (ANTIGEN=="PCV"&AGE_IMM_GIVEN<wk_with_grace(6)),..INVALID_DOSE_COLUMNS]
-    skipped_list[[3]][,NOTES:="Given before minimum allowable age on US Schedule and not-enteral live vaccine."]
-    if(verbose){message(paste0("Administrations discarded as given before first dose allowed: ",skipped_list[[3]][,.N]))}
+                     (ANTIGEN=="PCV"&AGE_IMM_GIVEN<wk_with_grace(6))]
+    if(nrow(skipped_group)> 0L){
+      skipped_group[,NOTES:="Given before minimum age on US Schedule and not non-enteral live vaccine."]
+      skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+      antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+      if(verbose){message(paste0("Administrations discarded as given before first dose allowed: ",skipped_group[,.N]))}
+    }
     #ROTA after 8 months (immunize.org as reference)
-    skipped_list[[4]]<-antigens_count[(ANTIGEN=="ROTA"&AGE_IMM_GIVEN>mon_no_grace(8)),..INVALID_DOSE_COLUMNS]
-    skipped_list[[4]][,NOTES:="Given older than allowable age on US Schedule."]
-    if(verbose){message(paste0("Administrations discarded as given after allowed age: ",skipped_list[[4]][,.N]))}
+    skipped_group<-antigens_count[(ANTIGEN=="ROTA"&AGE_IMM_GIVEN>mon_no_grace(8))]
+    if(nrow(skipped_group)> 0L){
+      skipped_group[,NOTES:="Given after max age on US schedule."]
+      skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+      antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+      if(verbose){message(paste0("Administrations discarded as after max age on US schedule: ",skipped_group[,.N]))}
+    }
+    
     
     #RSV removed from counter if given before release of beyfortus. We do not validate on Palivizumab
-    skipped_list[[5]]<-antigens_count[(ANTIGEN =='RSV'&DATE_GIVEN<RSV_DATE),..INVALID_DOSE_COLUMNS]
-    skipped_list[[5]][,`:=`(NOTES=("Palivizumab doses removed based on RSV date for Beyfortus starting."))]
-    if(verbose)message(paste0("Cleanup: total of ",skipped_list[[5]][,.N]," removed -- historic Palivizumab doses - not Beyfortus."))
-    #remove early skipped antigens - added safety check for null rows
-    skipped <- data.table::rbindlist(lapply(skipped_list, function(dt) if(nrow(dt) > 0) dt else NULL),
-                                     fill = TRUE)
-    antigens_count<-antigens_count[!TABLE_INDEX %in% skipped$TABLE_INDEX]
-    rm(skipped_list)
+    skipped_group<-antigens_count[(ANTIGEN =='RSV'&DATE_GIVEN<RSV_DATE)]
+    if(nrow(skipped_group)> 0L){
+      skipped_group[,`:=`(NOTES=("Palivizumab doses removed based on RSV date for Beyfortus starting."))]
+      skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+      antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+      if(verbose){message(paste0("Administrations discarded as historic Palivizumab doses - not Beyfortus: ",skipped_group[,.N]))}
+    }
+    
     #process step complete message
-    if(verbose){message(paste0("There are ",antigens_count[,.N]," remaining @",lubridate::now(),". Moving onto Live Virus processing. Please wait..."))}
+    if(verbose){message(paste0("There are ",antigens_count[,.N]," remaining @",Sys.time(),". Moving onto Live Virus processing. Please wait..."))}
     
     ##### --> LIVE VIRUS EVALUATION #####
     # remove Live Vaccines given too close together, nothing is validated as true here - just interval based removals
@@ -269,7 +315,7 @@
     } 
     else {
       # Proceed only if there are live doses
-      antigens_count<-antigens_count[order(STUDY_ID,IS_LIVE,AGE_IMM_GIVEN)]
+      data.table::setkey(antigens_count, STUDY_ID, IS_LIVE, AGE_IMM_GIVEN)
       antigen_live_map <- antigens_count[IS_LIVE == TRUE,.N,by = .(STUDY_ID, AGE_IMM_GIVEN)]
       #set interval
       antigen_live_map[, LIVE_INTERVAL := AGE_IMM_GIVEN - data.table::shift(AGE_IMM_GIVEN, 1L, type = "lag"),by = STUDY_ID]
@@ -278,34 +324,43 @@
       antigen_live_map <- antigen_live_map[, .(LIVE_INTERVAL = min(LIVE_INTERVAL, na.rm = TRUE)),by = .(STUDY_ID, AGE_IMM_GIVEN)]
       antigens_count <- antigen_live_map[antigens_count, on = .(STUDY_ID, AGE_IMM_GIVEN)]
       #handle removed
-      skipped<-rbind(skipped,antigens_count[IS_LIVE==TRUE&LIVE_INTERVAL>0&LIVE_INTERVAL<MIN_INTERVAL_LIVE,..INVALID_DOSE_COLUMNS])
-      skipped[is.na(NOTES),`:=`(NOTES=("Live vaccine given too soon after other live vaccine."),CYCLE=0)]
-      antigens_count<-antigens_count[is.na(LIVE_INTERVAL)|!(IS_LIVE==TRUE&LIVE_INTERVAL>0&LIVE_INTERVAL<MIN_INTERVAL_LIVE)]#remove all skipped 
-      if (verbose) {
-        live_skipped<-nrow(skipped[LIVE_INTERVAL>0])
-        message("Live removal: Total of ", live_skipped,
-                " removed. ", nrow(antigens_count), " remaining (total) @", lubridate::now())
-        message("Live Virus administrations discarded: ", live_skipped)
-        message(nrow(antigens_count), " antigen administrations still to be tested at antigen level starting at @", lubridate::now())
+      skipped_group<-antigens_count[IS_LIVE==TRUE&LIVE_INTERVAL>0&LIVE_INTERVAL<MIN_INTERVAL_LIVE]
+      if(nrow(skipped_group)> 0L){
+        skipped_group[,`:=`(NOTES=("Live vaccine given too soon after other live vaccine."))]
+        skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+        antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+        if (verbose) {
+          live_skipped<-skipped_group[,.N]
+          message("Live removal: Total of ", live_skipped," removed. ", nrow(antigens_count), " remaining (total) @", Sys.time())
+          message("Live Virus administrations discarded: ", live_skipped)
+        }
+        
       }
+      if (verbose) {message(nrow(antigens_count), " administrations remain to be validated at antigen level starting at @", Sys.time())}
       rm(antigen_live_map)
-      antigens_count<-antigens_count[order(STUDY_ID,ANTIGEN,AGE_IMM_GIVEN)]
+      data.table::setkey(antigens_count, STUDY_ID, ANTIGEN, AGE_IMM_GIVEN)
     }
     #APRIORI REMOVE imm with INTERVAL < shortest minterval for Antigen
     # HEP A dose inadvertently given less than 6 months after the skipped dose, it does not need to be repeated again as long as the interval between the initial HepA vaccine and the most recent dose is at least 6 calendar months.
     # HEP B TIME BETWEEN DOSE 2 (VALID) and DOSE 3 (VALID) is 8 weeks. An skipped interval admin does not reset this clock as per ACIP.
-    skipped<-rbind(skipped,antigens_count[(!ANTIGEN %in% c('COVID','HEPA','HEPB')&INTERVAL<MIN_INTERVAL_DEFAULT)#HEP A and HEP B ignore extra doses for minimum intervals
+    skipped_group<-antigens_count[(!ANTIGEN %in% c('COVID','HEPA','HEPB')&INTERVAL<MIN_INTERVAL_DEFAULT)#HEP A and HEP B ignore extra doses for minimum intervals
                                             |(ANTIGEN =='COVID'&INTERVAL<MIN_INTERVAL_COVID_PFIZER)#COVID has a potential minimum interval of 21 days
-                                            ,..INVALID_DOSE_COLUMNS])
-    if(verbose)message(paste0("Cleanup: total of ",skipped[is.na(NOTES),.N]," removed -- given too soon, no additional checking needed."))
-    skipped[is.na(NOTES),`:=`(NOTES=("Interval between doses to short to check."))]
-    antigens_count<-antigens_count[!TABLE_INDEX %in% skipped$TABLE_INDEX]
+                                            ]
+    if(nrow(skipped_group)> 0L){
+      skipped_group[,`:=`(NOTES=("Interval between doses to soon for second dose to be valid."))]
+      skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+      antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+      if(verbose){message(paste0("Administrations removed -- given too soon, no additional checking needed: ",skipped_group[,.N]))}
+    }
+    
     ##### COMPLETED ANTIGEN PRE-PREOCESSING ####
-    if(verbose){message(paste0("Beggining the evaluation of antigens by dose counter with first dose in each series: ", lubridate::now()))}
-    if(verbose){message(paste0("This may take some time. Please wait..."))}
+    if(verbose){message(paste0("Beggining the evaluation of antigens by dose counter with first dose in each series: ", Sys.time()))}
+    if(verbose){message(paste0("Applying final admin counter. This may take some time. Please wait..."))}
     #### FINAL REBASE BEFORE DOSE CYCLE CALCULATIONS #####
     antigens_count[,`:=`(ADMIN_COUNTER=seq_len(.N)),by=.(STUDY_ID,ANTIGEN)]
-    
+    if(verbose){message(paste0("Starting Dose 1"))}
+    #PREPARE RETURN storage
+    antigens_valid<-vector("list",7)
     ##### DOSE 1 checking #####
     current_baseline<-last_baseline<-nrow(antigens_count)
     counter<-1
@@ -332,7 +387,8 @@
       #TETANUS- ignore Td vs. DT
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="TETANUS"&AGE_IMM_GIVEN>=wk_with_grace(6),`:=`(DOSE_COUNTER=counter,VALID=TRUE,NEXT_DOSE_MIN=(DATE_GIVEN+wk_no_grace(4)),NEXT_DOSE_RECOMMENDED=(DATE_GIVEN+wk_no_grace(8)),DELAYED=(AGE_IMM_GIVEN>mon_no_grace(4)))]
       #ROTA - while maximum age to start is 14 weeks 6 days. Still count if late as series should be continued
-      antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="ROTA"&AGE_IMM_GIVEN>=wk_with_grace(4)&AGE_IMM_GIVEN<mon_no_grace(8),`:=`(DOSE_COUNTER=counter,VALID=TRUE,NEXT_DOSE_MIN=(DATE_GIVEN+wk_no_grace(4)),NEXT_DOSE_RECOMMENDED=(DATE_GIVEN+wk_no_grace(8)),DELAYED=(AGE_IMM_GIVEN>=wk_no_grace(15)))]
+      antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="ROTA"&AGE_IMM_GIVEN>=wk_with_grace(4)&AGE_IMM_GIVEN<mon_no_grace(8),`:=`(DOSE_COUNTER=counter,VALID=TRUE
+                                                                                                                                                  ,NEXT_DOSE_MIN=(DATE_GIVEN+wk_no_grace(4)),NEXT_DOSE_RECOMMENDED=(DATE_GIVEN+wk_no_grace(8)),DELAYED=(AGE_IMM_GIVEN>=wk_no_grace(15)))]
       #PCV: FINAL DOSE PCV after 2 YRS (not considering HR groups)
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="PCV"&AGE_IMM_GIVEN>=yr_no_grace(2),`:=`(DOSE_COUNTER=counter,VALID=TRUE,LAST_PNEUMOCOCCAL_CVX=CVX,DOSE_COMPLETES_SERIES=TRUE,DELAYED=(AGE_IMM_GIVEN>mon_no_grace(4)))]
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="PCV"&AGE_IMM_GIVEN>=wk_with_grace(6),`:=`(DOSE_COUNTER=counter,VALID=TRUE,LAST_PNEUMOCOCCAL_CVX=CVX
@@ -377,29 +433,40 @@
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="MENB"&AGE_IMM_GIVEN>=yr_with_grace(16),`:=`(DOSE_COUNTER=counter,VALID=TRUE,NEXT_DOSE_MIN=(DATE_GIVEN+mon_no_grace(6)),NEXT_DOSE_RECOMMENDED=(DATE_GIVEN+mon_no_grace(6)),DELAYED=FALSE)]
       #INFLU - Yearly vaccine cannot be delayed as first dose
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="INFLUENZA"&AGE_IMM_GIVEN>=yr_no_grace(9),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(INTERVAL>yr_with_grace(2))
-                                                                                                                       ,NEXT_DOSE_RECOMMENDED=ifelse(lubridate::month(DATE_GIVEN)>7
-                                                                                                                                             ,as.Date(paste0(lubridate::year(DATE_GIVEN)+1,"-09-01"))
-                                                                                                                                             ,as.Date(paste0(lubridate::year(DATE_GIVEN),"-09-01"))))]
+                                                                                                                       ,NEXT_DOSE_RECOMMENDED=next_sept1(DATE_GIVEN))]
+                                                                                                                                             
+                                                                                                                                             
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="INFLUENZA"&AGE_IMM_GIVEN>=mon_with_grace(6),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(INTERVAL>yr_with_grace(2)),NEXT_DOSE_MIN=(DATE_GIVEN+wk_no_grace(4)),NEXT_DOSE_RECOMMENDED=(DATE_GIVEN+wk_no_grace(4)))]
       #COIVD - Yearly vaccine cannot be delayed
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="COVID"&AGE_IMM_GIVEN>=mon_with_grace(6),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=FALSE)]
       #antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="COVID2023"&AGE_IMM_GIVEN>=mon_with_grace(6),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=FALSE)]
-      #store skippeds
-      skipped<-rbind(skipped,antigens_count[ADMIN_COUNTER==counter&is.na(VALID),..INVALID_DOSE_COLUMNS])
-      skipped[is.na(NOTES),`:=`(NOTES=(""),COUNTER=counter,CYCLE=cycle)]
-      if(verbose)message(paste0("Invalid administrations identified: ",skipped[COUNTER==counter&CYCLE==cycle,.N]))
-      #PREP ANTIGENS FOR NEXT CYCLE - Remove skipped doses and recalculate ADMIN_COUNTER (min of dose counter)
-      antigens_count<-antigens_count[ADMIN_COUNTER>counter|VALID==TRUE]#only keep future doses or ADMIN_1s that are correct
+      #store skipped
+      skipped_group<-antigens_count[ADMIN_COUNTER==counter&is.na(VALID)]
+      if(nrow(skipped_group)> 0L){
+        skipped_group[,`:=`(NOTES=(""),COUNTER=counter,CYCLE=cycle)]
+        skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+        antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+        if (verbose) message("Invalid administrations identified: ", nrow(skipped_group))
+      }
       #reset the ADMIN_COUNTER for first run where the first given was skipped
-      antigens_count[STUDY_ID %in% skipped[COUNTER==counter&CYCLE==cycle]$STUDY_ID,`:=`(ADMIN_COUNTER=seq_len(.N)+counter-1),by=.(STUDY_ID,ANTIGEN)]
+      antigens_count[STUDY_ID %in% skipped_group$STUDY_ID,`:=`(ADMIN_COUNTER=seq_len(.N)+counter-1),by=.(STUDY_ID,ANTIGEN)]
+      # find only the combinations that need reset
       current_baseline<-nrow(antigens_count)
-      if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",lubridate::now()))
+      if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",Sys.time()))
     }
     #clean up for next dose
     antigens_count[,SERIES_COMPLETE:=max(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
-    skipped<-rbind(skipped,antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID),..INVALID_DOSE_COLUMNS])
+    #store skipped - series completed previously, no further dose evaluations needed
+    skipped_group<-antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID)]
+    if(nrow(skipped_group)> 0L){
+      skipped_group[,`:=`(NOTES=paste0("Series completed previously with ",counter," valid doses."),COUNTER=counter)]
+      skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+      antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+      if (verbose) message("Not evaluated since series already completed: ", nrow(skipped_group))
+    }
+    # find only the combinations that need reset
+    current_baseline<-nrow(antigens_count)
     antigens_count<-antigens_count[VALID==TRUE|SERIES_COMPLETE==FALSE]#only keep future doses or ADMIN_1s that are correct
-    skipped[is.na(NOTES),`:=`(NOTES="Series completed with first dose, extra doses removed",COUNTER=ABS_ADMIN_COUNTER,CYCLE=-1)]
     #Post Processing
     antigens_count[VALID==TRUE,FIRST_DOSE_CVX:=CVX]
     antigens_count[,AGE_FIRST_DOSE:=min(AGE_IMM_GIVEN,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
@@ -413,11 +480,11 @@
     antigens_count[ANTIGEN=="HEPB"&AGE_IMM_GIVEN>=yr_with_grace(18),PREVIOUS_HEPB_BRAND_ADULT2DOSE := FIRST_DOSE_CVX %in% cvx$ADULT_HEPB]
     #report out
     if(verbose){message(paste0("Administrations validated dose ",counter,": ",antigens_count[VALID==TRUE&DOSE_COUNTER==counter,.N]))}
-    if(verbose){message(paste0("Total administrations discarded: ",skipped[,.N]))}
+    
     if(verbose){message(paste0("Total administrations remaining: ",antigens_count[is.na(VALID),.N]))}
-    antigens_valid[[counter]]<-antigens_count[VALID==TRUE,..ANTIGEN_RETURN_COLUMNS]
+    antigens_valid[[counter]]<-antigens_count[VALID==TRUE]
     antigens_count<-antigens_count[is.na(VALID)]
-    if(verbose){message(paste0("Completed Dose ",counter," evaluation @ ",lubridate::now()))}
+    if(verbose){message(paste0("Completed Dose ",counter," evaluation @ ",Sys.time()))}
     gc()#clean up
     ##### DOSE 2 checking #####
     #adjust the loop variables
@@ -452,8 +519,8 @@
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="HEPB"&AGE_IMM_GIVEN>=yr_with_grace(18)&INTERVAL>=wk_with_grace(4)&FIRST_DOSE_CVX %in% cvx$ADULT_HEPB2 &CVX %in% cvx$ADULT_HEPB2,`:=`(HEPB_DOSE_2=AGE_IMM_GIVEN,DOSE_COUNTER=counter,VALID=TRUE,DOSE_COMPLETES_SERIES=TRUE,DELAYED=(AGE_IMM_GIVEN>mon_no_grace(6)&INTERVAL>mon_with_grace(4)))]
       #HEP B dose 3 next dose is min x weeks from dose 2 and 16 weeks from dose 1,NEXT_DOSE_MIN=(DATE_GIVEN+wk_no_grace(4)),NEXT_DOSE_RECOMMENDED=(DATE_GIVEN+wk_no_grace(8))
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="HEPB"&AGE_IMM_GIVEN>=yr_no_grace(0)&INTERVAL>=wk_with_grace(4),`:=`(HEPB_DOSE_2=AGE_IMM_GIVEN,DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(AGE_IMM_GIVEN>mon_no_grace(6)&INTERVAL>mon_with_grace(4))
-                                                                                                                                             ,NEXT_DOSE_MIN=pmax(DOB+wk_no_grace(24),DATE_GIVEN+wk_no_grace(8),AGE_FIRST_DOSE+wk_no_grace(16))#
-                                                                                                                                             ,NEXT_DOSE_RECOMMENDED=pmax(DOB+wk_no_grace(24),DATE_GIVEN+wk_no_grace(8),AGE_FIRST_DOSE+wk_no_grace(16))#
+                                                                                                                                             ,NEXT_DOSE_MIN=pmax(DOB+wk_no_grace(24),DATE_GIVEN+wk_no_grace(8),DOB+AGE_FIRST_DOSE+wk_no_grace(16))#
+                                                                                                                                             ,NEXT_DOSE_RECOMMENDED=pmax(DOB+wk_no_grace(24),DATE_GIVEN+wk_no_grace(8),DOB+AGE_FIRST_DOSE+wk_no_grace(16))#
                                                                                                                                              )]
       #TETANUS dose 1-2 is 4 week minimum, age is not a factor yet
       #Age is a factor in dose 2-3 if over age 7 for dose 2
@@ -487,15 +554,15 @@
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="HEPA"&AGE_IMM_GIVEN>=yr_with_grace(1)&AGE_IMM_GIVEN<yr_no_grace(19)&(AGE_IMM_GIVEN-AGE_FIRST_DOSE)>=mon_with_grace(6),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DOSE_COMPLETES_SERIES=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(2)&INTERVAL>mon_with_grace(15)))]
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="HEPA"&IS_ADULT_HEPA==TRUE&AGE_IMM_GIVEN>yr_no_grace(19)&(AGE_IMM_GIVEN-AGE_FIRST_DOSE)>=mon_with_grace(6),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DOSE_COMPLETES_SERIES=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(2)&INTERVAL>mon_with_grace(15)))]
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="HEPA"&AGE_IMM_GIVEN>=yr_no_grace(19)&INTERVAL>=wk_with_grace(4),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(2)&INTERVAL>mon_with_grace(15))
-                                                                                                                                              ,NEXT_DOSE_RECOMMENDED=pmax(AGE_IMM_GIVEN+mon_no_grace(5),AGE_FIRST_DOSE+mon_no_grace(6))
-                                                                                                                                              ,NEXT_DOSE_MIN=pmax(AGE_IMM_GIVEN+mon_no_grace(5),AGE_FIRST_DOSE+mon_no_grace(6))
+                                                                                                                                              ,NEXT_DOSE_RECOMMENDED=pmax(DATE_GIVEN+mon_no_grace(5),DOB+AGE_FIRST_DOSE+mon_no_grace(6))
+                                                                                                                                              ,NEXT_DOSE_MIN=pmax(DATE_GIVEN+mon_no_grace(5),DOB+AGE_FIRST_DOSE+mon_no_grace(6))
                                                                                                                                               )]
       #HPV: Completion of series if first dose given before 15th birthday
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="HPV"&AGE_IMM_GIVEN>=yr_with_grace(9)&AGE_FIRST_DOSE<yr_no_grace(15)&INTERVAL>=mon_with_grace(5),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DOSE_COMPLETES_SERIES=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(9)&INTERVAL>mon_with_grace(15)))]
       #HPV: otherwise count as second dose if 4 weeks/grave from dose 1
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="HPV"&AGE_IMM_GIVEN>=yr_with_grace(9)&INTERVAL>=wk_with_grace(4),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(9)&INTERVAL>mon_with_grace(15))
-                                                                                                                                              ,NEXT_DOSE_RECOMMENDED=pmax(AGE_IMM_GIVEN+wk_no_grace(16),AGE_FIRST_DOSE+mon_no_grace(6))
-                                                                                                                                              ,NEXT_DOSE_MIN=pmax(AGE_IMM_GIVEN+wk_no_grace(12),AGE_FIRST_DOSE+wk_no_grace(21))
+                                                                                                                                              ,NEXT_DOSE_RECOMMENDED=pmax(DATE_GIVEN+wk_no_grace(16),DOB+AGE_FIRST_DOSE+mon_no_grace(6))
+                                                                                                                                              ,NEXT_DOSE_MIN=pmax(DATE_GIVEN+wk_no_grace(12),DOB+AGE_FIRST_DOSE+wk_no_grace(21))
                                                                                                                                               )]
       #MCV: 
       # Adolescents who receive their first dose at age 13–15 years should receive a booster dose at age 16–18 years; 
@@ -511,40 +578,44 @@
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="MENB"&AGE_IMM_GIVEN>=yr_with_grace(16)&INTERVAL>=mon_with_grace(4)&PRIOR_BEXSERO&IS_BEXSERO&ABS_ADMIN_COUNTER>=3&AGE_FIRST_DOSE>=yr_with_grace(16),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DOSE_COMPLETES_SERIES=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(16)&INTERVAL>mon_with_grace(15)))]
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="MENB"&AGE_IMM_GIVEN>=yr_with_grace(16)&INTERVAL>=mon_with_grace(6)&PRIOR_TRUMENBA&IS_TRUMENBA,`:=`(DOSE_COUNTER=counter,VALID=TRUE,DOSE_COMPLETES_SERIES=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(16)&INTERVAL>mon_with_grace(15)))]
       #INFLUENZA BOOSTER AND YEARLY CHECK
-      antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="INFLUENZA",`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(INTERVAL>yr_with_grace(2))
-                                                                                         ,NEXT_DOSE_RECOMMENDED=ifelse(lubridate::month(DATE_GIVEN)>7
-                                                                                                                       ,as.Date(paste0(lubridate::year(DATE_GIVEN)+1,"-09-01"))
-                                                                                                                       ,as.Date(paste0(lubridate::year(DATE_GIVEN),"-09-01"))))]
+      antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="INFLUENZA",`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(INTERVAL>yr_with_grace(2)),NEXT_DOSE_RECOMMENDED=next_sept1(DATE_GIVEN))]
       #need data on first_COVID_brand
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="COVID"&FIRST_DOSE_CVX %in% cvx$PFIZER&AGE_IMM_GIVEN>=mon_with_grace(6)&INTERVAL>=wk_with_grace(3),`:=`(DOSE_COUNTER=counter,VALID=TRUE)]
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="COVID"&!FIRST_DOSE_CVX %in% cvx$PFIZER&AGE_IMM_GIVEN>=mon_with_grace(6)&INTERVAL>=wk_with_grace(4),`:=`(DOSE_COUNTER=counter,VALID=TRUE)]
-      #store skippeds
-      skipped<-rbind(skipped,antigens_count[ADMIN_COUNTER==counter&is.na(VALID),..INVALID_DOSE_COLUMNS])
-      skipped[is.na(NOTES),`:=`(NOTES=(""),COUNTER=counter,CYCLE=cycle)]
-      if(verbose)message(paste0("Invalid administrations identified: ",skipped[COUNTER==counter&CYCLE==cycle,.N]))
-      #PREP ANTIGENS FOR NEXT CYCLE - Remove skipped doses and recalculate ADMIN_COUNTER (min of dose counter)
-      antigens_count<-antigens_count[ADMIN_COUNTER>counter|VALID==TRUE]#only keep future doses or ADMIN_1s that are correct
-      #reset antigen counters
-      antigens_count[STUDY_ID %in% skipped[COUNTER==counter&CYCLE==cycle]$STUDY_ID,`:=`(ADMIN_COUNTER=seq_len(.N)+counter-1),by=.(STUDY_ID,ANTIGEN)]
+      #store skipped
+      skipped_group<-antigens_count[ADMIN_COUNTER==counter&is.na(VALID)]
+      if(nrow(skipped_group)> 0L){
+        skipped_group[,`:=`(NOTES=(""),COUNTER=counter,CYCLE=cycle)]
+        skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+        antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+        if (verbose) message("Invalid administrations identified: ", nrow(skipped_group))
+      }
+      #reset the ADMIN_COUNTER for first run where the first given was skipped
+      antigens_count[STUDY_ID %in% skipped_group$STUDY_ID,`:=`(ADMIN_COUNTER=seq_len(.N)+counter-1),by=.(STUDY_ID,ANTIGEN)]
       current_baseline<-nrow(antigens_count)
-      if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",lubridate::now()))
+      if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",Sys.time()))
     }
     #clean up and prep for next dose
     antigens_count[,SERIES_COMPLETE:=max(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
-    skipped<-rbind(skipped,antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID),..INVALID_DOSE_COLUMNS])
-    antigens_count<-antigens_count[VALID==TRUE|SERIES_COMPLETE==FALSE]#only keep future doses or validated admins
-    skipped[is.na(NOTES),`:=`(NOTES="Series completed with second dose, extra doses removed",COUNTER=ABS_ADMIN_COUNTER,CYCLE=-1)]
+    #store skipped - series completed previously, no further dose evaluations needed
+    skipped_group<-antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID)]
+    if(nrow(skipped_group)> 0L){
+      skipped_group[,`:=`(NOTES=paste0("Series completed previously with ",counter," valid doses."),COUNTER=counter)]
+      skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+      antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+      if (verbose) message("Not evaluated since series already completed: ", nrow(skipped_group))
+    }
     #Dose post-processing - HEP B, HIB and PCV care about second dose status
     #antigens_count[ANTIGEN=="PCV"&ADMIN_COUNTER>=counter,PRIOR_PNEUMOCOCCAL:=max_na(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
     antigens_count[ANTIGEN=="HEPB"&ADMIN_COUNTER>=counter,SECOND_HEPB:=max_na(HEPB_DOSE_2,na.rm = TRUE),by=.(STUDY_ID)]
     antigens_count[ADMIN_COUNTER<=(counter+1)&ANTIGEN=="HIB",EXISTS_HIB4:=any(ifelse(is.na(IS_HIB4), F, IS_HIB4)),by=.(STUDY_ID)]#force HIB 4 calculations if dose 1/2/3 are HIB4
     #report out
     if(verbose){message(paste0("Administrations validated dose ",counter,": ",antigens_count[VALID==TRUE&DOSE_COUNTER==counter,.N]))}
-    if(verbose){message(paste0("Total administrations discarded: ",skipped[,.N]))}
+    
     if(verbose){message(paste0("Total administrations remaining: ",antigens_count[is.na(VALID),.N]))}
-    antigens_valid[[counter]]<-antigens_count[VALID==TRUE,..ANTIGEN_RETURN_COLUMNS]
+    antigens_valid[[counter]]<-antigens_count[VALID==TRUE]
     antigens_count<-antigens_count[is.na(VALID)]
-    if(verbose){message(paste0("Completed Dose ",counter," evaluation @ ",lubridate::now()))}
+    if(verbose){message(paste0("Completed Dose ",counter," evaluation @ ",Sys.time()))}
     gc()#clean up
     ##### DOSE 3 checking #####
     current_baseline<-last_baseline<-nrow(antigens_count)
@@ -602,36 +673,45 @@
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="HEPA"&AGE_IMM_GIVEN>=yr_no_grace(19)&(AGE_IMM_GIVEN-AGE_FIRST_DOSE)>=mon_with_grace(6)&INTERVAL>=mon_with_grace(5),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DOSE_COMPLETES_SERIES=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(1)&INTERVAL>mon_with_grace(15)))]
       #Influenza - Booster and Yearly
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="INFLUENZA",`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(INTERVAL>yr_with_grace(2))
-                                                                                         ,NEXT_DOSE_RECOMMENDED=ifelse(lubridate::month(DATE_GIVEN)>7
-                                                                                                                       ,as.Date(paste0(lubridate::year(DATE_GIVEN)+1,"-09-01"))
-                                                                                                                       ,as.Date(paste0(lubridate::year(DATE_GIVEN),"-09-01"))))]
+                                                                                         ,NEXT_DOSE_RECOMMENDED=next_sept1(DATE_GIVEN))]
+                                                                                                                       
+                                                                                                                       
       #need data on first_COVID_brand
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="COVID"&FIRST_DOSE_CVX %in% cvx$PFIZER&AGE_IMM_GIVEN>=mon_with_grace(6)&INTERVAL>=wk_with_grace(8),`:=`(DOSE_COUNTER=counter,VALID=TRUE)]
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="COVID"&!FIRST_DOSE_CVX %in% cvx$PFIZER&AGE_IMM_GIVEN>=mon_with_grace(6)&INTERVAL>=wk_with_grace(4),`:=`(DOSE_COUNTER=counter,VALID=TRUE)]
-      #store skippeds
-      skipped<-rbind(skipped,antigens_count[ADMIN_COUNTER==counter&is.na(VALID),..INVALID_DOSE_COLUMNS])
-      skipped[is.na(NOTES),`:=`(NOTES=(""),COUNTER=counter,CYCLE=cycle)]
-      if(verbose)message(paste0("Invalid administrations identified: ",skipped[COUNTER==counter&CYCLE==cycle,.N]))
-      #PREP ANTIGENS FOR NEXT CYCLE - Remove skipped doses and recalculate ADMIN_COUNTER (min of dose counter)
-      antigens_count<-antigens_count[ADMIN_COUNTER>counter|VALID==TRUE]#only keep future doses or ADMINs that are correct
-      antigens_count[STUDY_ID %in% skipped[COUNTER==counter&CYCLE==cycle]$STUDY_ID,`:=`(ADMIN_COUNTER=seq_len(.N)+counter-1),by=.(STUDY_ID,ANTIGEN)]
+      #store skipped
+      skipped_group<-antigens_count[ADMIN_COUNTER==counter&is.na(VALID)]
+      if(nrow(skipped_group)> 0L){
+        skipped_group[,`:=`(NOTES=(""),COUNTER=counter,CYCLE=cycle)]
+        skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+        antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+        if (verbose) message("Invalid administrations identified: ", nrow(skipped_group))
+      }
+      #reset the ADMIN_COUNTER for first run where the first given was skipped
+      antigens_count[STUDY_ID %in% skipped_group$STUDY_ID,`:=`(ADMIN_COUNTER=seq_len(.N)+counter-1),by=.(STUDY_ID,ANTIGEN)]
+      # find only the combinations that need reset
       current_baseline<-nrow(antigens_count)
-      if(verbose)message(paste0("Dose ",counter," Cycle #",cycle," validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens ",antigens_count[is.na(VALID),.N]," remaining @",lubridate::now()))
+      if(verbose)message(paste0("Dose ",counter," Cycle #",cycle," validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens ",antigens_count[is.na(VALID),.N]," remaining @",Sys.time()))
     }
     #clean up and prep for next dose
     antigens_count[,SERIES_COMPLETE:=max(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
-    skipped<-rbind(skipped,antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID),..INVALID_DOSE_COLUMNS])
-    antigens_count<-antigens_count[VALID==TRUE|SERIES_COMPLETE==FALSE]#only keep future doses or validated admins
-    skipped[is.na(NOTES),`:=`(NOTES="Series completed with third dose, extra doses removed",COUNTER=ABS_ADMIN_COUNTER,CYCLE=-1)]
+    #store skipped - series completed previously, no further dose evaluations needed
+    skipped_group<-antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID)]
+    if(nrow(skipped_group)> 0L){
+      skipped_group[,`:=`(NOTES=paste0("Series completed previously with ",counter," valid doses."),COUNTER=counter)]
+      skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+      antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+      if (verbose) message("Not evaluated since series already completed: ", nrow(skipped_group))
+    }
     #Dose post-processing
     #antigens_count[ANTIGEN=="PCV"&ADMIN_COUNTER>=counter,PRIOR_PNEUMOCOCCAL:=max_na(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
     #report out
     if(verbose){message(paste0("Administrations validated dose ",counter,": ",antigens_count[VALID==TRUE&DOSE_COUNTER==counter,.N]))}
-    if(verbose){message(paste0("Total administrations discarded: ",skipped[,.N]))}
+    
     if(verbose){message(paste0("Total administrations remaining: ",antigens_count[is.na(VALID),.N]))}
-    antigens_valid[[counter]]<-antigens_count[VALID==TRUE,..ANTIGEN_RETURN_COLUMNS]
+    antigens_valid[[counter]]<-antigens_count[VALID==TRUE]
     antigens_count<-antigens_count[is.na(VALID)]
-    if(verbose){message(paste0("Completed Dose ",counter," evaluation @ ",lubridate::now()))}
+    if(verbose){message(paste0("Completed Dose ",counter," evaluation @ ",Sys.time()))}
     gc()#clean up
     ##### DOSE 4 checking ######
     current_baseline<-last_baseline<-nrow(antigens_count)
@@ -650,49 +730,58 @@
       #antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="PCV"&PRIOR_PNEUMOCOCCAL %in% cvx$PCV &CVX %in% cvx$PPV23 &AGE_IMM_GIVEN>=yr_no_grace(2)&INTERVAL>=wk_with_grace(8),`:=`(DOSE_COUNTER=counter,VALID=TRUE,LAST_PNEUMOCOCCAL_CVX=CVX,DOSE_COMPLETES_SERIES=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(3)&INTERVAL>mon_with_grace(6)))]
       #TETANUS 4 doses counts if last is >7yr (operationalized as 10yr due to HEDIS) - COMPLETES SERIES UNTIL ADULTHOOD
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="TETANUS"&AGE_IMM_GIVEN>=yr_no_grace(10)&INTERVAL>=days_with_grace(180),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(13)&INTERVAL>mon_with_grace(15))
-                                                                                                                                                                                              ,NEXT_DOSE_RECOMMENDED=(AGE_IMM_GIVEN+yr_no_grace(10))
-                                                                                                                                                                                              ,NEXT_DOSE_MIX=(AGE_IMM_GIVEN+yr_no_grace(10))
+                                                                                                                                                                                              ,NEXT_DOSE_RECOMMENDED=(DATE_GIVEN+yr_no_grace(10))
+                                                                                                                                                                                              ,NEXT_DOSE_MIN=(DATE_GIVEN+yr_no_grace(10))
                                                                                                                                                      )]
       #CDC/ACIP: Dose 5 (DTAP) is not necessary if dose 4 was administered at age 4 years or older and at least 6 months after dose 3.
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="TETANUS"&AGE_IMM_GIVEN>=yr_no_grace(4)&AGE_IMM_GIVEN<yr_no_grace(7)&INTERVAL>=days_with_grace(180),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(1)&AGE_IMM_GIVEN<yr_no_grace(11)&INTERVAL>mon_with_grace(15))
-                                                                                                                                                                                 ,NEXT_DOSE_MIN=pmax(DOB+yr_no_grace(10),AGE_IMM_GIVEN+mon_no_grace(6))
-                                                                                                                                                                                 ,NEXT_DOSE_RECOMMENDED=pmax(DOB+yr_no_grace(11),AGE_IMM_GIVEN+mon_no_grace(6)))]
+                                                                                                                                                                                 ,NEXT_DOSE_MIN=pmax(DOB+yr_no_grace(10),DATE_GIVEN+mon_no_grace(6))
+                                                                                                                                                                                 ,NEXT_DOSE_RECOMMENDED=pmax(DOB+yr_no_grace(11),DATE_GIVEN+mon_no_grace(6)))]
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="TETANUS"&AGE_IMM_GIVEN>=yr_no_grace(7)&INTERVAL>=days_with_grace(180),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(1)&INTERVAL>mon_with_grace(15)&AGE_IMM_GIVEN<yr_no_grace(11))
                                                                                                                                                     ,NEXT_DOSE_MIN=DATE_GIVEN+yr_no_grace(10)
                                                                                                                                                     ,NEXT_DOSE_RECOMMENDED=DATE_GIVEN+yr_no_grace(10))]
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="TETANUS"&AGE_IMM_GIVEN>=yr_no_grace(1)&AGE_IMM_GIVEN<yr_no_grace(7)&INTERVAL>=mon_with_grace(4),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(AGE_IMM_GIVEN>mon_no_grace(18)&AGE_IMM_GIVEN<yr_no_grace(11)&INTERVAL>mon_with_grace(6))
-                                                                                                                                                                              ,NEXT_DOSE_MIN=pmax(DOB+yr_no_grace(4),AGE_IMM_GIVEN+mon_no_grace(6))
-                                                                                                                                                                              ,NEXT_DOSE_RECOMMENDED=pmax(DOB+yr_no_grace(4),AGE_IMM_GIVEN+mon_no_grace(6)))]
+                                                                                                                                                                              ,NEXT_DOSE_MIN=pmax(DOB+yr_no_grace(4),DATE_GIVEN+mon_no_grace(6))
+                                                                                                                                                                              ,NEXT_DOSE_RECOMMENDED=pmax(DOB+yr_no_grace(4),DATE_GIVEN+mon_no_grace(6)))]
       #Influenza - Yearly
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="INFLUENZA",`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(INTERVAL>yr_with_grace(2))
-                                                                                         ,NEXT_DOSE_RECOMMENDED=ifelse(lubridate::month(DATE_GIVEN)>7
-                                                                                                                       ,as.Date(paste0(lubridate::year(DATE_GIVEN)+1,"-09-01"))
-                                                                                                                       ,as.Date(paste0(lubridate::year(DATE_GIVEN),"-09-01"))))]
+                                                                                         ,NEXT_DOSE_RECOMMENDED=next_sept1(DATE_GIVEN))]
+                                                                                                                       
+                                                                                                                       
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="COVID"&AGE_IMM_GIVEN>=mon_with_grace(6)&INTERVAL>=wk_with_grace(8),`:=`(DOSE_COUNTER=counter,VALID=TRUE)]
-      #store skippeds
-      skipped<-rbind(skipped,antigens_count[ADMIN_COUNTER==counter&is.na(VALID),..INVALID_DOSE_COLUMNS])
-      skipped[is.na(NOTES),`:=`(NOTES=(""),COUNTER=counter,CYCLE=cycle)]
-      if(verbose)message(paste0("Invalid administrations identified: ",skipped[COUNTER==counter&CYCLE==cycle,.N]))
-      #PREP ANTIGENS FOR NEXT CYCLE - Remove skipped doses and recalculate ADMIN_COUNTER (min of dose counter)
-      antigens_count<-antigens_count[ADMIN_COUNTER>counter|VALID==TRUE]#only keep future doses or ADMINs that are correct
-      antigens_count[STUDY_ID %in% skipped[COUNTER==counter&CYCLE==cycle]$STUDY_ID,`:=`(ADMIN_COUNTER=seq_len(.N)+counter-1),by=.(STUDY_ID,ANTIGEN)]
+      #store skipped
+      skipped_group<-antigens_count[ADMIN_COUNTER==counter&is.na(VALID)]
+      if(nrow(skipped_group)> 0L){
+        skipped_group[,`:=`(NOTES=(""),COUNTER=counter,CYCLE=cycle)]
+        skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+        antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+        if (verbose) message("Invalid administrations identified: ", nrow(skipped_group))
+      }
+      #reset the ADMIN_COUNTER for first run where the first given was skipped
+      antigens_count[STUDY_ID %in% skipped_group$STUDY_ID,`:=`(ADMIN_COUNTER=seq_len(.N)+counter-1),by=.(STUDY_ID,ANTIGEN)]
+      # find only the combinations that need reset
       current_baseline<-nrow(antigens_count)
-      if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",lubridate::now()))
+      if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",Sys.time()))
     }
     #clean up and prep for next dose
     antigens_count[,SERIES_COMPLETE:=max(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
-    skipped<-rbind(skipped,antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID),..INVALID_DOSE_COLUMNS])
-    antigens_count<-antigens_count[VALID==TRUE|SERIES_COMPLETE==FALSE]#only keep future doses or validated admins
-    skipped[is.na(NOTES),`:=`(NOTES="Series completed with fourth dose, extra doses removed",COUNTER=ABS_ADMIN_COUNTER,CYCLE=-1)]
+    #store skipped - series completed previously, no further dose evaluations needed
+    skipped_group<-antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID)]
+    if(nrow(skipped_group)> 0L){
+      skipped_group[,`:=`(NOTES=paste0("Series completed previously with ",counter," valid doses."),COUNTER=counter)]
+      skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+      antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+      if (verbose) message("Not evaluated since series already completed: ", nrow(skipped_group))
+    }
     #Dose post-processing
     #antigens_count[ANTIGEN=="PCV"&ADMIN_COUNTER>=counter,PRIOR_PNEUMOCOCCAL:=max_na(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
     #report out
     if(verbose){message(paste0("Administrations validated dose ",counter,": ",antigens_count[VALID==TRUE&DOSE_COUNTER==counter,.N]))}
-    if(verbose){message(paste0("Total administrations discarded: ",skipped[,.N]))}
+    
     if(verbose){message(paste0("Total administrations remaining: ",antigens_count[is.na(VALID),.N]))}
-    antigens_valid[[counter]]<-antigens_count[VALID==TRUE,..ANTIGEN_RETURN_COLUMNS]
+    antigens_valid[[counter]]<-antigens_count[VALID==TRUE]
     antigens_count<-antigens_count[is.na(VALID)]
-    if(verbose){message(paste0("Completed Dose ",counter," evaluation @ ",lubridate::now()))}
+    if(verbose){message(paste0("Completed Dose ",counter," evaluation @ ",Sys.time()))}
     gc()#clean up
     ##### DOSE 5 checking ######
     current_baseline<-last_baseline<-nrow(antigens_count)
@@ -707,42 +796,50 @@
                                                                                                                                                      ,NEXT_DOSE_RECOMMENDED=DATE_GIVEN+yr_no_grace(10))]
       #CDC/ACIP: Dose 5 (DTAP) is not necessary if dose 4 was administered at age 4 years or older and at least 6 months after dose 3.
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="TETANUS"&AGE_IMM_GIVEN>=yr_no_grace(4)&AGE_IMM_GIVEN<yr_no_grace(7)&INTERVAL>=days_with_grace(180),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(6)&AGE_IMM_GIVEN<yr_no_grace(11)&INTERVAL>mon_with_grace(15))
-                                                                                                                                                                                 ,NEXT_DOSE_MIN=pmax(DOB+yr_no_grace(10),AGE_IMM_GIVEN+mon_no_grace(6))
-                                                                                                                                                                                 ,NEXT_DOSE_RECOMMENDED=pmax(DOB+yr_no_grace(11),AGE_IMM_GIVEN+mon_no_grace(6)))]
+                                                                                                                                                                                 ,NEXT_DOSE_MIN=pmax(DOB+yr_no_grace(10),DATE_GIVEN+mon_no_grace(6))
+                                                                                                                                                                                 ,NEXT_DOSE_RECOMMENDED=pmax(DOB+yr_no_grace(11),DATE_GIVEN+mon_no_grace(6)))]
       #PPV23 - DOSE 1
       #antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="PPV23"&PRIOR_PNEUMOCOCCAL %in% cvx$PCV &CVX %in% cvx$PPV23 &AGE_IMM_GIVEN>=yr_no_grace(2)&INTERVAL>=wk_with_grace(8),`:=`(DOSE_COUNTER=counter,VALID=TRUE,LAST_PNEUMOCOCCAL_CVX=CVX,DOSE_COMPLETES_SERIES=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(3)&INTERVAL>mon_with_grace(6)))]
       #PPV23 - DOSE 2
       #antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="PPV23"&PRIOR_PNEUMOCOCCAL %in% cvx$PPV23&CVX %in% cvx$PPV23&AGE_IMM_GIVEN>=yr_no_grace(5)&INTERVAL>=yr_no_grace(5),`:=`(DOSE_COUNTER=counter,VALID=TRUE,LAST_PNEUMOCOCCAL_CVX=CVX,DOSE_COMPLETES_SERIES=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(3)&INTERVAL>mon_with_grace(6)))]
       #Influenza - Yearly
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="INFLUENZA",`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(INTERVAL>yr_with_grace(2))
-                                                                                         ,NEXT_DOSE_RECOMMENDED=ifelse(lubridate::month(DATE_GIVEN)>7
-                                                                                                                       ,as.Date(paste0(lubridate::year(DATE_GIVEN)+1,"-09-01"))
-                                                                                                                       ,as.Date(paste0(lubridate::year(DATE_GIVEN),"-09-01"))))]
+                                                                                         ,NEXT_DOSE_RECOMMENDED=next_sept1(DATE_GIVEN))]
+                                                                                                                       
+                                                                                                                       
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="COVID"&AGE_IMM_GIVEN>=mon_with_grace(6)&INTERVAL>=wk_with_grace(8),`:=`(DOSE_COUNTER=counter,VALID=TRUE)]
-      #store skippeds
-      skipped<-rbind(skipped,antigens_count[ADMIN_COUNTER==counter&is.na(VALID),..INVALID_DOSE_COLUMNS])
-      skipped[is.na(NOTES),`:=`(NOTES=(""),COUNTER=counter,CYCLE=cycle)]
-      if(verbose)message(paste0("Invalid administrations identified: ",skipped[COUNTER==counter&CYCLE==cycle,.N]))
-      #PREP ANTIGENS FOR NEXT CYCLE - Remove skipped doses and recalculate ADMIN_COUNTER (min of dose counter)
-      antigens_count<-antigens_count[ADMIN_COUNTER>5|VALID==TRUE]#only keep future doses or ADMINs that are correct
-      antigens_count[STUDY_ID %in% skipped[COUNTER==counter&CYCLE==cycle]$STUDY_ID,`:=`(ADMIN_COUNTER=seq_len(.N)+counter-1),by=.(STUDY_ID,ANTIGEN)]
+      #store skipped
+      skipped_group<-antigens_count[ADMIN_COUNTER==counter&is.na(VALID)]
+      if(nrow(skipped_group)> 0L){
+        skipped_group[,`:=`(NOTES=(""),COUNTER=counter,CYCLE=cycle)]
+        skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+        antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+        if (verbose) message("Invalid administrations identified: ", nrow(skipped_group))
+      }
+      #reset the ADMIN_COUNTER for first run where the first given was skipped
+      antigens_count[STUDY_ID %in% skipped_group$STUDY_ID,`:=`(ADMIN_COUNTER=seq_len(.N)+counter-1),by=.(STUDY_ID,ANTIGEN)]
       current_baseline<-nrow(antigens_count)
-      if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",lubridate::now()))
+      if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",Sys.time()))
     }
     #clean up and prep for next dose
     antigens_count[,SERIES_COMPLETE:=max(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]
-    skipped<-rbind(skipped,antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID),..INVALID_DOSE_COLUMNS])
-    antigens_count<-antigens_count[VALID==TRUE|SERIES_COMPLETE==FALSE]#only keep future doses or ADMIN_1s that are correct
-    skipped[is.na(NOTES),`:=`(NOTES="Series completed with fifth dose, extra doses removed",COUNTER=ABS_ADMIN_COUNTER,CYCLE=-1)]
+    #store skipped - series completed previously, no further dose evaluations needed
+    skipped_group<-antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID)]
+    if(nrow(skipped_group)> 0L){
+      skipped_group[,`:=`(NOTES=paste0("Series completed previously with ",counter," valid doses."),COUNTER=counter)]
+      skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+      antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+      if (verbose) message("Not evaluated since series already completed: ", nrow(skipped_group))
+    }
     #Dose 5 post-processing
     #antigens_count[ANTIGEN=="PCV"&ADMIN_COUNTER>=counter,PRIOR_PNEUMOCOCCAL:=max_na(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
     #report out
     if(verbose){message(paste0("Administrations validated dose ",counter,": ",antigens_count[VALID==TRUE&DOSE_COUNTER==counter,.N]))}
-    if(verbose){message(paste0("Total administrations discarded: ",skipped[,.N]))}
+    
     if(verbose){message(paste0("Total administrations remaining: ",antigens_count[is.na(VALID),.N]))}
-    antigens_valid[[counter]]<-antigens_count[VALID==TRUE,..ANTIGEN_RETURN_COLUMNS]
+    antigens_valid[[counter]]<-antigens_count[VALID==TRUE]
     antigens_count<-antigens_count[is.na(VALID)]
-    if(verbose){message(paste0("Completed Dose ",counter," evaluation @ ",lubridate::now()))}
+    if(verbose){message(paste0("Completed Dose ",counter," evaluation @ ",Sys.time()))}
     gc()#clean up
     ##### DOSE 6 checking ######
     current_baseline<-last_baseline<-nrow(antigens_count)
@@ -756,32 +853,40 @@
                                                                                                                                                      ,NEXT_DOSE_RECOMMENDED=DATE_GIVEN+yr_no_grace(10))]
       #Influenza - Yearly
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="INFLUENZA",`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(INTERVAL>yr_with_grace(2))
-                                                                                         ,NEXT_DOSE_RECOMMENDED=ifelse(lubridate::month(DATE_GIVEN)>7
-                                                                                                                       ,as.Date(paste0(lubridate::year(DATE_GIVEN)+1,"-09-01"))
-                                                                                                                       ,as.Date(paste0(lubridate::year(DATE_GIVEN),"-09-01"))))]
+                                                                                         ,NEXT_DOSE_RECOMMENDED=next_sept1(DATE_GIVEN))]
+                                                                                                                       
+                                                                                                                       
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="COVID"&AGE_IMM_GIVEN>=mon_with_grace(6)&INTERVAL>=wk_with_grace(8),`:=`(DOSE_COUNTER=counter,VALID=TRUE)]
-      #store invlaid antigens
-      skipped<-rbind(skipped,antigens_count[ADMIN_COUNTER==counter&is.na(VALID),..INVALID_DOSE_COLUMNS])
-      skipped[is.na(NOTES),`:=`(NOTES=(""),COUNTER=counter,CYCLE=cycle)]
-      if(verbose)message(paste0("Invalid administrations identified: ",skipped[COUNTER==counter&CYCLE==cycle,.N]))
-      #PREP ANTIGENS FOR NEXT CYCLE - Remove skipped doses and recalculate ADMIN_COUNTER (min of dose counter)
-      antigens_count<-antigens_count[ADMIN_COUNTER>counter|VALID==TRUE]#only keep future doses or ADMIN_1s that are correct
-      antigens_count[STUDY_ID %in% skipped[COUNTER==counter&CYCLE==cycle]$STUDY_ID,`:=`(ADMIN_COUNTER=seq_len(.N)+counter-1),by=.(STUDY_ID,ANTIGEN)]
+      #store skipped
+      skipped_group<-antigens_count[ADMIN_COUNTER==counter&is.na(VALID)]
+      if(nrow(skipped_group)> 0L){
+        skipped_group[,`:=`(NOTES=(""),COUNTER=counter,CYCLE=cycle)]
+        skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+        antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+        if (verbose) message("Invalid administrations identified: ", nrow(skipped_group))
+      }
+      #reset the ADMIN_COUNTER for first run where the first given was skipped
+      antigens_count[STUDY_ID %in% skipped_group$STUDY_ID,`:=`(ADMIN_COUNTER=seq_len(.N)+counter-1),by=.(STUDY_ID,ANTIGEN)]
       current_baseline<-nrow(antigens_count)
-      if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",lubridate::now()))
+      if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",Sys.time()))
     }
     #clean up and prep for next dose
     antigens_count[,SERIES_COMPLETE:=max(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]
-    skipped<-rbind(skipped,antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID),..INVALID_DOSE_COLUMNS])
-    antigens_count<-antigens_count[VALID==TRUE|SERIES_COMPLETE==FALSE]#only keep future doses or ADMIN_1s that are correct
-    skipped[is.na(NOTES),`:=`(NOTES="Series completed with sixth dose, extra doses removed",COUNTER=ABS_ADMIN_COUNTER,CYCLE=-1)]
+    #store skipped - series completed previously, no further dose evaluations needed
+    skipped_group<-antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID)]
+    if(nrow(skipped_group)> 0L){
+      skipped_group[,`:=`(NOTES=paste0("Series completed previously with ",counter," valid doses."),COUNTER=counter)]
+      skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+      antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+      if (verbose) message("Not evaluated since series already completed: ", nrow(skipped_group))
+    }
     #report out
     if(verbose){message(paste0("Administrations validated dose ",counter,": ",antigens_count[VALID==TRUE&DOSE_COUNTER==counter,.N]))}
-    if(verbose){message(paste0("Total administrations discarded: ",skipped[,.N]))}
+    
     if(verbose){message(paste0("Total administrations remaining: ",antigens_count[is.na(VALID),.N]))}
-    antigens_valid[[counter]]<-antigens_count[VALID==TRUE,..ANTIGEN_RETURN_COLUMNS]
+    antigens_valid[[counter]]<-antigens_count[VALID==TRUE]
     antigens_count<-antigens_count[is.na(VALID)]
-    if(verbose){message(paste0("Completed Dose ",counter," evaluation @ ",lubridate::now()))}
+    if(verbose){message(paste0("Completed Dose ",counter," evaluation @ ",Sys.time()))}
     gc()#clean up
     ##### DOSE 7+ checking ######
     #TO get to this point all previous doses would be valid and only matters for tetanus for re-dosing q10 years and yearly flu
@@ -791,27 +896,34 @@
     #FLU is yearly, delayed is if more than 2 years between doses
     #Influenza - Yearly
     antigens_count[ANTIGEN=="INFLUENZA",`:=`(DOSE_COUNTER=as.numeric(ADMIN_COUNTER),VALID=TRUE,DELAYED=(INTERVAL>yr_with_grace(2))
-                                                                                       ,NEXT_DOSE_RECOMMENDED=ifelse(lubridate::month(DATE_GIVEN)>7
-                                                                                                                     ,as.Date(paste0(lubridate::year(DATE_GIVEN)+1,"-09-01"))
-                                                                                                                     ,as.Date(paste0(lubridate::year(DATE_GIVEN),"-09-01"))))]
-    
-    antigens_count[,FLU_SEASON:=ifelse(ANTIGEN!="INFLUENZA",0,ifelse(data.table::month(DATE_GIVEN)>7,data.table::year(DATE_GIVEN),data.table::year(DATE_GIVEN)-1))]
-    #COVID 
+                                                                                       ,NEXT_DOSE_RECOMMENDED=next_sept1(DATE_GIVEN))]
+                                                                                                                     
+    #COVID
     antigens_count[ANTIGEN=="COVID",`:=`(DOSE_COUNTER=as.numeric(ADMIN_COUNTER),VALID=TRUE)]
-    antigens_count[,COVID_SEASON:=ifelse(ANTIGEN!="COVID",0,ifelse(data.table::month(DATE_GIVEN)>7,data.table::year(DATE_GIVEN),data.table::year(DATE_GIVEN)-1))]
-    #RSV
-    antigens_count[,RSV_SEASON:=ifelse(ANTIGEN!="RSV",0,ifelse(data.table::month(DATE_GIVEN)>7,data.table::year(DATE_GIVEN),data.table::year(DATE_GIVEN)-1))]
-    antigens_count<-antigens_count[VALID==TRUE]#only keep future doses or ADMIN_1s that are correct
-    skipped[is.na(NOTES),`:=`(NOTES="Remaining not validatated",COUNTER=ABS_ADMIN_COUNTER,CYCLE=-1)]
+    #SEAONALITY OF DOSE ADMINISTER (e.g which Flu season was this considered season X is from 8/1/x-7/31/x+1, therefore if <8 will -1 the year to get X)
+    antigens_count[ANTIGEN %in% SEASONAL_ANTIGENS,`:=`(MONTH_GIVEN=month_from_date(DATE_GIVEN),YEAR_GIVEN=year_from_date(DATE_GIVEN))]
+    antigens_count[ANTIGEN == "INFLUENZA",FLU_SEASON := ifelse(MONTH_GIVEN > 7L, YEAR_GIVEN, YEAR_GIVEN - 1L)]
+    antigens_count[ANTIGEN == "RSV",RSV_SEASON := ifelse(MONTH_GIVEN > 7L, YEAR_GIVEN, YEAR_GIVEN - 1L)]
+    antigens_count[ANTIGEN == "COVID",COVID_SEASON := ifelse(MONTH_GIVEN > 7L, YEAR_GIVEN, YEAR_GIVEN - 1L)]
+    #store skipped - series completed previously, no further dose evaluations needed
+    skipped_group<-antigens_count[is.na(VALID)==TRUE]
+    if(nrow(skipped_group)> 0L){
+      skipped_group[,`:=`(NOTES=paste0("Invalid at endstep."))]
+      skipped_list[[length(skipped_list) + 1L]]<-skipped_group
+      antigens_count<-antigens_count[!skipped_group,on="TABLE_INDEX"]
+      if (verbose) message("Not evaluated since series already completed: ", nrow(skipped_group))
+    }
     #report out
     if(verbose){message(paste0("Administrations validated dose ",7,"+: ",antigens_count[VALID==TRUE,.N]))}
-    if(verbose){message(paste0("Total administrations discarded: ",skipped[,.N]))}
+    if(verbose){message(paste0("Total administrations discarded: ",sum(vapply(skipped_list, nrow, integer(1L)))))}
     if(verbose){message(paste0("Total administrations remaining: ",antigens_count[is.na(VALID),.N]))}
-    antigens_valid[[counter]]<-antigens_count[VALID==TRUE,..ANTIGEN_RETURN_COLUMNS]
+    antigens_valid[[counter]]<-antigens_count[VALID==TRUE]
     antigens_count<-antigens_count[is.na(VALID)]
-    if(verbose){message(paste0("Completed evaluation @ ",lubridate::now()))}
+    if(verbose){message(paste0("Completed evaluation @ ",Sys.time()))}
     gc()#clean up
-    antigens_complete<-data.table::rbindlist(antigens_valid,fill=TRUE)
+    #build return lists
+    antigens_complete<-data.table::rbindlist(lapply(antigens_valid, function(dt) if(nrow(dt) > 0) dt else NULL),fill = TRUE)
+    skipped <- data.table::rbindlist(lapply(skipped_list, function(dt) if(nrow(dt) > 0) dt else NULL),fill = TRUE)
     #report out
     if(verbose){message(paste0("Total administrations discarded: ",skipped[,.N]))}
     if(verbose){message(paste0("Total administrations ignrored: ",antigens_count[is.na(VALID),.N]))}
@@ -840,11 +952,11 @@
     #finalize the list for return
     valid_output <- list(
       immunizations    = immunizations,
-      antigens         = antigens_complete,
-      skipped_antigens = skipped
+      antigens         = antigens_complete[,..ANTIGEN_RETURN_COLUMNS],
+      skipped_antigens = skipped[,..INVALID_DOSE_COLUMNS]
     )
     #output messaging
-    if(verbose){message(paste0("Completed validate_immunizations of immunizations @ ",lubridate::now()))}
+    if(verbose){message(paste0("Completed validate_immunizations of immunizations @ ",Sys.time()))}
     if(verbose){message(paste0("Total administrations discards: ",skipped[,.N]))}
     if(verbose)message(paste0("Output returned includes 3 large lists:"))
     if(verbose)message(paste0("--immunizations list contains product level data"))      

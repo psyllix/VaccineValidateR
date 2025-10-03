@@ -78,12 +78,34 @@ Bug/error fixes are released when notices.
 Validation rules are based on ACIP 2025 guidance, but may not yet cover every nuance.
 COVID vaccination status is not calculated for completion given the recent changes to yearly formulations.
 
-### License
+### Non-Commercial Research License
 ---
+This project is released under a Non-Commercial Research License. For commercial use, please contact michelj@chop.edu for licensing terms.”
 
-This project is licensed under the [GNU General Public License v3 (GPL-3)](https://www.gnu.org/licenses/gpl-3.0.html).
-You are free to use, modify, and distribute this software, provided that derivative works are also licensed under GPL-3.
-See the GNU General Public License for details.
+Copyright ©2025 The Children's Hospital of Philadelphia.
+Permission is hereby granted, free of charge, to any person or organization to use, copy, modify, and distribute this software and associated documentation files (the “Software”), for academic, research, or educational purposes only, subject to the following conditions:
+
+#### Attribution
+Appropriate credit must be given to the authors in any use, publication, or derivative work of the Software.
+
+#### Non-Commercial Use Only
+The Software may not be used, in whole or in part, for commercial purposes, including but not limited to:
+- use in a product for sale,
+- use in a for-profit company’s operations,
+- use in services provided to customers for a fee.
+
+#### Commercial Licensing
+For commercial use, a separate license must be obtained from the copyright holder. Please contact:
+[michelj@chop.edu](mailto:michelj@chop.edu)
+
+#### Warranty Disclaimer
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ## Resources
 

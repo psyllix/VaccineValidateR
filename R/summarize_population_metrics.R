@@ -154,6 +154,6 @@ summarize_population_metrics <- function(patients,
     return(results_wide)
   }
   
-  if (verbose) message("Completed summarization at ", lubridate::now())
+  if (verbose) message("Completed summarization at ", Sys.time())
   return(results_long)
 }

@@ -33,6 +33,18 @@ MIN_INTERVAL_COVID_PFIZER <-17
 #' @keywords internal
 SYSTEM_ANTIGENS <-c('POLIO','HIB','PCV','HEPA','HEPB','HPV','MCV','MENB','TETANUS','ROTA','COVID','RSV','MMR','VZV','INFLUENZA')
 
+#' Seasonal Antigens
+#'
+#' Internal constant listing antigens that follow seasonal rules
+#' (e.g., influenza, COVID, RSV).
+#'
+#' @format A character vector of antigen names.
+#' @examples
+#' VaccineValidateR:::SEASONAL_ANTIGENS
+#'
+#' @keywords internal
+SEASONAL_ANTIGENS <- c("INFLUENZA", "COVID", "RSV")
+
 #' CVX Mapping
 #'
 #' A named list of CVX codes grouped by antigen.
@@ -85,8 +97,6 @@ cvx <- NULL
 #'   CVX                \tab CVX vaccine code \cr
 #'   ANTIGEN            \tab Standardized antigen grouping \cr
 #'   TABLE_INDEX        \tab Row index from original processing table \cr
-#'   GIVEN_STATUS       \tab 1 if given, 0 if not \cr
-#'   ADMIN_LOCATION     \tab Location where vaccine was administered \cr
 #'   DATE_GIVEN         \tab Date the immunization was given \cr
 #'   AGE_IMM_GIVEN      \tab Age in days at immunization \cr
 #'   ABS_ADMIN_COUNTER  \tab Absolute order of doses for the patient \cr
@@ -114,8 +124,6 @@ ANTIGEN_RETURN_DEFS <- c(
   CVX = "CVX vaccine code",
   ANTIGEN = "Standardized antigen grouping",
   TABLE_INDEX = "Row index from original processing table",
-  GIVEN_STATUS = "1 if given, 0 if not",
-  ADMIN_LOCATION = "Location where vaccine was administered",
   DATE_GIVEN = "Date the immunization was given",
   AGE_IMM_GIVEN = "Age in days at immunization",
   ABS_ADMIN_COUNTER = "Absolute order of doses for the patient",
@@ -134,7 +142,7 @@ ANTIGEN_RETURN_DEFS <- c(
 # Universal antigen return columns
 ANTIGEN_RETURN_COLUMNS <- c(
   'STUDY_ID','PRODUCT','CVX','ANTIGEN','TABLE_INDEX',
-  'GIVEN_STATUS','ADMIN_LOCATION','DATE_GIVEN','AGE_IMM_GIVEN',
+  'DATE_GIVEN','AGE_IMM_GIVEN',
   'ABS_ADMIN_COUNTER','ADMIN_COUNTER','DOSE_COUNTER','INTERVAL',
   'LIVE_INTERVAL','VALID','NEXT_DOSE_MIN','NEXT_DOSE_RECOMMENDED',
   'DOSE_COMPLETES_SERIES','SERIES_COMPLETE','DELAYED','AGE_FIRST_DOSE'
@@ -153,8 +161,6 @@ ANTIGEN_RETURN_COLUMNS <- c(
 #'   \item{CVX}{CVX vaccine code}
 #'   \item{ANTIGEN}{Standardized antigen grouping}
 #'   \item{TABLE_INDEX}{Row index from original processing table}
-#'   \item{GIVEN_STATUS}{1 if given, 0 if not}
-#'   \item{ADMIN_LOCATION}{Location where vaccine was administered}
 #'   \item{DATE_GIVEN}{Date the immunization was given}
 #'   \item{AGE_IMM_GIVEN}{Age in days at immunization}
 #'   \item{ABS_ADMIN_COUNTER}{Absolute order of doses for the patient}
@@ -169,7 +175,7 @@ ANTIGEN_RETURN_COLUMNS <- c(
 #' @keywords internal
 INVALID_DOSE_COLUMNS <- c(
   'STUDY_ID','PRODUCT','CVX','ANTIGEN','TABLE_INDEX',
-  'GIVEN_STATUS','ADMIN_LOCATION','DATE_GIVEN','AGE_IMM_GIVEN',
+  'DATE_GIVEN','AGE_IMM_GIVEN',
   'ABS_ADMIN_COUNTER','INTERVAL','LIVE_INTERVAL',
   'COUNTER','CYCLE','SERIES_COMPLETE','NOTES'
 )
@@ -180,8 +186,6 @@ INVALID_DOSE_DEFS <- c(
   CVX             = "CVX vaccine code",
   ANTIGEN         = "Standardized antigen grouping",
   TABLE_INDEX     = "Row index from original processing table",
-  GIVEN_STATUS    = "1 if given, 0 if not",
-  ADMIN_LOCATION  = "Location where vaccine was administered",
   DATE_GIVEN      = "Date the immunization was given",
   AGE_IMM_GIVEN   = "Age in days at immunization",
   ABS_ADMIN_COUNTER = "Absolute order of doses for the patient",
@@ -200,7 +204,7 @@ INVALID_DOSE_DEFS <- c(
 #' @format A character vector of column names.
 #' @keywords internal
 VISIT_RETURN_COLUMNS <- c(
-  'STUDY_ID','VISIT_DATE','ANTIGEN',
+  'STUDY_ID','VISIT_ID','VISIT_DATE','ANTIGEN',
   'IS_VIRAL_SEASON','DOB','AGED_OUT','COMPLETED_PREVIOUSLY',
   'NEXT_DOSE_MIN','NEXT_DOSE_RECOMMENDED','DUE','GIVEN','MISSED',
   'DELAYED_PRIOR_DOSE','DELAYED_VISIT_DOSE','DELAYED_NEXT_DOSE',
@@ -216,6 +220,7 @@ VISIT_RETURN_COLUMNS <- c(
 #' @keywords internal
 VISIT_RETURN_DEFS <- c(
   STUDY_ID = "Unique identifier for the patient/subject",
+  VISIT_ID        = "Unique visit identifier",
   VISIT_DATE = "Date of the clinical visit",
   ANTIGEN = "Vaccine antigen being evaluated",
   IS_VIRAL_SEASON = "Flag for viral season (Sept to Apr = TRUE)",

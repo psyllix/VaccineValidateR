@@ -1,4 +1,4 @@
-.datatable.aware = TRUE
+.datatable.aware <- TRUE
 
 #' Evaluate Visits for Immunization Status
 #'
@@ -22,6 +22,7 @@
 #'   Default is \code{"DOB"}.
 #' @param visit_date_column_name Name of the column in \code{visit_data} for visit dates.
 #'   Default is \code{"VISIT_DATE"}.
+#' @param years A numeric vector of evaluation years to include test.
 #' @param verbose Logical. If \code{TRUE}, prints messages during processing. Default is \code{TRUE}.
 #'
 #' @details
@@ -76,6 +77,7 @@ evaluate_visits<-function(visit_data
                           ,study_id_column_name='STUDY_ID'
                           ,date_of_birth_column_name='DOB'
                           ,visit_date_column_name='VISIT_DATE'
+                          ,years = NULL
                           ,verbose=TRUE
                           ){
   # confirm the antigen data is validated
@@ -84,51 +86,19 @@ evaluate_visits<-function(visit_data
   antigen_to_eval <- toupper(antigen_to_eval)
   #create internal copy of immunization and patient data (if passed into function)
   visit_data<-data.table::setDT(data.table::copy(visit_data))
-  #antigens and patients are only references, not changed - do not need to create a copy
-  if (!is.null(patients)) {
-    patients <- data.table::setDT(data.table::copy(patients))
-  }
-  
   #EVALUATE INCOMING TABLES FOR COMPLETENESS ######
   if(verbose) message(paste0("Starting evaluation process for visits. Validating inputs."))
  
   #VISIT STUDY ID validation
   if(!study_id_column_name %in% colnames(visit_data)){stop("Column for study ID is required in immunization_data. Either use STUDY_ID or declare the column name. If a Patients file is being used study id column name must match accross tables.")}
-  if(study_id_column_name!='STUDY_ID'){
-    visit_data<-visit_data[,STUDY_ID:=get(study_id_column_name)]
-    if(!missing(patients) && !is.null(patients)){
-      patients[, STUDY_ID := get(study_id_column_name)]
-    }
-  }
-  # Ensure patient table has unique STUDY_ID
-  if (!is.null(patients)) {
-    dup_ids <- patients[, .N, by = STUDY_ID][N > 1, STUDY_ID]
-    if (length(dup_ids) > 0) {
-      stop("Patients table must have unique STUDY_ID values. Found duplicates for: ",
-           paste(dup_ids, collapse = ", "))
-    }
-  }
-  #VISIT DATE
-  if(!visit_date_column_name %in% colnames(visit_data)){stop("Column for visit date is required in visit_data. Either use VISIT_DATE or declare the column name.")}
-  if(visit_date_column_name!='VISIT_DATE'){visit_data<-visit_data[,VISIT_DATE:=get(visit_date_column_name)]}
-  #DOB
-  if(!date_of_birth_column_name %in% colnames(visit_data)){
-    if(is.null(patients) || all(is.na(patients))){
-      stop("Column for DOB is required in visit_data or in patients. Either use DOB or declare the column name. Patients table is only requierd if no DOB in visit_data")
-    }
-    else{
-      if(!date_of_birth_column_name %in% colnames(patients)){
-        stop("Column for DOB is required in visit_data or in patients. Either use DOB or declare the column name. Patients is only requierd if no DOB in visit_data")
-      }
-      if(date_of_birth_column_name!='DOB'){patients<-patients[,DOB:=get(date_of_birth_column_name)]}
-      #now that DOB is confirmed, apply the DOB to visit table
-      visit_data<-patients[,.(DOB=max(DOB,na.rm = TRUE))][visit_data, on=.(STUDY_ID)]
-    }
-  }
-  if(date_of_birth_column_name!='DOB'&!'DOB' %in% colnames(visit_data)){visit_data<-visit_data[,DOB:=get(date_of_birth_column_name)]}
-  if(verbose) message(paste0("validate_immunizations check complete - formatting data. This may take a while..."))
+  if(study_id_column_name!='STUDY_ID'){visit_data<-visit_data[,STUDY_ID:=get(study_id_column_name)]}
+  #APPLY DOB to VISIT table
+  visit_data<-apply_dob(visit_data
+                        ,patients=patients
+                        ,study_id_column_name=study_id_column_name
+                        ,date_of_birth_column_name=date_of_birth_column_name)
   
-  #select the antigens we will evaluate against
+  #select the antigens we will evaluate against - confirm that only allowed antigens exist
   antigens_list<-SYSTEM_ANTIGENS
   if(!identical(antigen_to_eval, "ALL")){
     antigens_list<-intersect(antigens_list, antigen_to_eval)
@@ -138,19 +108,33 @@ evaluate_visits<-function(visit_data
   }
   antigens<-antigens[ANTIGEN %in% antigens_list]
   #PREPARE RETURN storage
-  visit_return<-vector("list",length(antigens_list))
+  visits_evaluated<-vector("list",length(antigens_list))
   
   #confirm dates are in the correct format
   if(!inherits(visit_data$VISIT_DATE,'Date')){
-    visit_data$VISIT_DATE <- as.Date(visit_data$VISIT_DATE,format="%Y-%m-%d")
+    make_a_date(visit_data,"VISIT_DATE")
   }
+  # Optional year filter
+  if (!is.null(years)) {
+    if (verbose) message("Restricting visits to years: ", paste(years, collapse = ", "))
+    visit_data <- visit_data[year_from_date(VISIT_DATE) %in% years]
+    if (nrow(visit_data) == 0L) {
+      warning("No visits remain after year filter. Returning empty table.")
+      return(data.table())
+    }
+  }  
+  
   if(!inherits(visit_data$DOB,'Date')){
-    visit_data$DOB <- as.Date(visit_data$DOB,format="%Y-%m-%d")
+    if(verbose) message("DATE mapping needed:DOB")
+    make_a_date(visit_data,"DOB")
   }
+  #date given should already exist on antigens, but good to check
   if(!inherits(antigens$DATE_GIVEN,'Date')){
-    antigens$DATE_GIVEN <- as.Date(antigens$DATE_GIVEN,format="%Y-%m-%d")
+    if(verbose) message("DATE mapping needed:DATE_GIVEN")
+    make_a_date(antigens,"DATE_GIVEN")
   }
-  visit_data[,VISIT_MONTH:=(lubridate::month(VISIT_DATE))]
+  if(verbose) message("Extract and determine dates of interest.")
+  visit_data[,VISIT_MONTH:=(month_from_date(VISIT_DATE))]
   #create past and future dates for merging
   visit_data[,TOMORROW:=VISIT_DATE+1]
   visit_data[,YESTERDAY:=VISIT_DATE-1]
@@ -158,27 +142,30 @@ evaluate_visits<-function(visit_data
   visit_data[,IS_VIRAL_SEASON:=(VISIT_MONTH>=9|VISIT_MONTH<=4)]
   
   #prep the antigens for joining to visit_data
+  if(verbose) message("Prepare the antigens for joining. Antigen groups")
   antigens[,JOIN_DATE:=DATE_GIVEN]
-  antigen_split <- split(antigens, by="ANTIGEN", keep.by=TRUE)
+  data.table::setkey(antigens, ANTIGEN, STUDY_ID, DATE_GIVEN)
+  #antigen_split <- split(antigens, by="ANTIGEN", keep.by=TRUE)
   if(verbose) message(paste0("Data formatting completed, moving onto visit-antigen validate_immunizations."))
   #for each antigen in the antigen list create a set of variables and apply that to the visit_data
   cols_to_keep <- union(VISIT_RETURN_COLUMNS, setdiff(names(visit_data), VISIT_RETURN_COLUMNS))
   
-  for(i in 1:length(antigens_list)){
-    if(verbose) message(paste0("Evaluating status of visits for ",antigens_list[i]," vaccination status."))
+  for(ant in antigens_list){
+    if(verbose) message(paste0("Evaluating status of visits for ",ant," vaccination status. Starting ",Sys.time()))
     # Pull this antigen’s subset
-    visit_antigen_eval<-visit_data#need all visits each time - even aged out visits
-    this_antigen <- antigen_split[[antigens_list[i]]]
+    visit_antigen_eval <- data.table::copy(visit_data) #need all visits each time - even aged out visits
+    #this_antigen <- antigen_split[[ant]]
+    this_antigen <- antigens[.(ant)]
     # Skip if missing or empty
     if (is.null(this_antigen) || nrow(this_antigen) == 0) {
-      if (verbose) message("  No records found for ", antigens_list[i], ". Skipping evaluation. Check CVX mapping.")
+      if (verbose) message("  No records found for ", ant, ". Skipping evaluation. Check CVX mapping.")
       next
     }
     if(verbose) message(paste0("--Start with yesterday - calculate next date an immunization is due and previous dose information."))
     #create new instance of visit_data for the antigen in question
     visit_antigen_eval[,JOIN_DATE:=YESTERDAY]
     #evaluate the merge from previous day visits
-    visit_antigen_eval<-this_antigen[ANTIGEN==antigens_list[i],.(
+    visit_antigen_eval<-this_antigen[ANTIGEN==ant,.(
       STUDY_ID
      ,JOIN_DATE
      ,DATE_GIVEN
@@ -191,7 +178,7 @@ evaluate_visits<-function(visit_data
     if(verbose) message(paste0("--Determine if a dose was given at the day of the visit and if so, was it delayed."))
     #now only on the visit date grab if an antigen dose was given - roll is not need
     visit_antigen_eval[,JOIN_DATE:=VISIT_DATE]
-    visit_antigen_eval<-this_antigen[ANTIGEN==antigens_list[i],.(
+    visit_antigen_eval<-this_antigen[ANTIGEN==ant,.(
       STUDY_ID
       ,JOIN_DATE
       ,DELAYED_THIS_DOSE=DELAYED
@@ -200,39 +187,40 @@ evaluate_visits<-function(visit_data
     )][visit_antigen_eval,on = .(STUDY_ID,JOIN_DATE)]
   visit_antigen_eval[is.na(GIVEN_AT_VISIT),GIVEN_AT_VISIT:=FALSE]
    #APPLY AGE MINIMUNMS TO DATE MIN/REC times
-   if(antigens_list[i] %in% c('HIB','PCV','POLIO','TETANUS','ROTA')){
+   if(ant %in% c('HIB','PCV','POLIO','TETANUS','ROTA')){
       visit_antigen_eval[is.na(DATE_GIVEN),`:=`(NEXT_DOSE_MIN=DOB+wk_no_grace(6),NEXT_DOSE_RECOMMENDED=DOB+wk_no_grace(8))]
    }
-    else if(antigens_list[i] %in% c('COVID')){
+    else if(ant %in% c('COVID')){
       visit_antigen_eval[is.na(DATE_GIVEN),`:=`(NEXT_DOSE_MIN=DOB+yr_no_grace(1),NEXT_DOSE_RECOMMENDED=DOB+mon_no_grace(6))]
     }
-   else if(antigens_list[i] %in% c('VZV','MMR','HEPA')){
+   else if(ant %in% c('VZV','MMR','HEPA')){
             visit_antigen_eval[is.na(DATE_GIVEN),`:=`(NEXT_DOSE_MIN=DOB+yr_no_grace(1),NEXT_DOSE_RECOMMENDED=DOB+yr_no_grace(1))]
    }
-   else if(antigens_list[i] %in% c('HEPB','RSV')){
+   else if(ant %in% c('HEPB','RSV')){
       visit_antigen_eval[is.na(DATE_GIVEN),`:=`(NEXT_DOSE_MIN=DOB+yr_no_grace(0),NEXT_DOSE_RECOMMENDED=DOB+yr_no_grace(0))]
    }
-   else if(antigens_list[i] %in% c('HPV')){
+   else if(ant %in% c('HPV')){
       visit_antigen_eval[is.na(DATE_GIVEN),`:=`(NEXT_DOSE_MIN=DOB+yr_no_grace(9),NEXT_DOSE_RECOMMENDED=DOB+yr_no_grace(9))]
    }
-   else if(antigens_list[i] %in% c('MCV')){
+   else if(ant %in% c('MCV')){
       visit_antigen_eval[is.na(DATE_GIVEN),`:=`(NEXT_DOSE_MIN=DOB+yr_no_grace(10),NEXT_DOSE_RECOMMENDED=DOB+yr_no_grace(11))]
    }
-    else if(antigens_list[i] %in% c('MENB')){
+    else if(ant %in% c('MENB')){
       visit_antigen_eval[is.na(DATE_GIVEN),`:=`(NEXT_DOSE_MIN=DOB+yr_no_grace(16),NEXT_DOSE_RECOMMENDED=DOB+yr_no_grace(16))]
     }
-   else if(antigens_list[i] %in% c('INFLUENZA')){
-     visit_antigen_eval[is.na(DATE_GIVEN)==TRUE,`:=`(NEXT_DOSE_MIN=pmax(DOB+mon_no_grace(6),as.Date(paste0(lubridate::year(DOB)+1,"-09-01")))
-                                                                 ,NEXT_DOSE_RECOMMENDED=pmax(DOB+mon_no_grace(6),as.Date(paste0(lubridate::year(DOB)+1,"-09-01"))))]
+   else if(ant %in% c('INFLUENZA')){
+     visit_antigen_eval<-visit_antigen_eval[IS_VIRAL_SEASON==TRUE]#remove non viral season
+     visit_antigen_eval[is.na(DATE_GIVEN)==TRUE,NEXT_DOSE_MIN:=pmax(DOB+mon_no_grace(6),next_sept1(DOB))]
+     visit_antigen_eval[is.na(DATE_GIVEN)==TRUE,NEXT_DOSE_RECOMMENDED:=NEXT_DOSE_MIN]
    }
    #apply maximum ages
-   if(antigens_list[i] %in% c('HIB','PCV')){
+   if(ant %in% c('HIB','PCV')){
      visit_antigen_eval[,AGE_OUT:=DOB+yr_no_grace(5)]
    }
-  else if(antigens_list[i] %in% c('RSV')){
+  else if(ant %in% c('RSV')){
     visit_antigen_eval[,AGE_OUT:=DOB+yr_no_grace(2)]
   }
-   else if(antigens_list[i] %in% c('ROTA')){
+   else if(ant %in% c('ROTA')){
       visit_antigen_eval[,AGE_OUT:=DOB+mon_no_grace(8)]
    }
    else
@@ -242,13 +230,12 @@ evaluate_visits<-function(visit_data
   if(full_return==FALSE){
     visit_antigen_eval<-visit_antigen_eval[VISIT_DATE<AGE_OUT&VISIT_DATE>=NEXT_DOSE_MIN&!COMPLETED_PREVIOUSLY]
   }
-  
   #JOIN TOMORROW
    if(verbose) message(paste0("--Add in content from the next possible antigen given."))
     
    visit_antigen_eval[,JOIN_DATE:=TOMORROW]
    #data.table::setkey(visit_antigen_eval,STUDY_ID,JOIN_DATE)
-   visit_antigen_eval<-this_antigen[ANTIGEN==antigens_list[i],.(
+   visit_antigen_eval<-this_antigen[ANTIGEN==ant,.(
      STUDY_ID
      ,JOIN_DATE
      ,DELAYED_NEXT_DOSE=DELAYED
@@ -262,10 +249,10 @@ evaluate_visits<-function(visit_data
                             &!is.na(NEXT_DOSE_RECOMMENDED)#MUST HAVE A NEXT RECOMMENDED DATE TO BE DUE - ALL VISITS SHOULD HAVE A RECOMMENDED NEXT DOSE IF NOT COMPLETED AND NOT AGED OUT
                             &(NEXT_DOSE_RECOMMENDED<=VISIT_DATE)#AND THE DATE RECOMMENDED IS BEFORE OR ON THE VISIT DATE
    )]
+
    #DETERMINE CONCEPTS FOR EACH ANTIGEN
-   visit_antigen_eval[,ANTIGEN:=antigens_list[i]]
+   visit_antigen_eval[,ANTIGEN:=ant]
    visit_antigen_eval[,AGED_OUT:=!(VISIT_DATE<AGE_OUT)]#SHOULD ALWAYS BE FALSE IF NOT FULL RETURN
-   #visit_antigen_eval[,LAST_GIVEN_DATE:=ifelse(GIVEN_AT_VISIT==TRUE,VISIT_DATE,DATE_GIVEN)]#DATE THE LAST IMMUNIZATION WAS GIVEN, NA IF no previous dose, INCLUDES THE DAY OF VISIT
    visit_antigen_eval[,DELAYED_PRIOR_DOSE:=DELAYED_LAST_DOSE]#FLAG THAT THE LAST DOSE WAS GIVEN DELAYED, NA if there was no doses before/during visit
    visit_antigen_eval[,DELAYED_VISIT_DOSE:=DELAYED_THIS_DOSE]#FLAG THAT THE LAST DOSE WAS GIVEN DELAYED, NA if there was no doses before/during visit
    visit_antigen_eval[,DELAYED_NEXT_DOSE:=DELAYED_NEXT_DOSE]#FLAG THAT THE NEXT DOSE WAS GIVEN DELAYED, NA if there was no future dose given
@@ -277,23 +264,24 @@ evaluate_visits<-function(visit_data
    visit_antigen_eval[,NEXT_RCVD_30_DAYS:=(!is.na(NEXT_GIVEN_DATE)&NEXT_GIVEN_DATE<=VISIT_DATE+30)]
    visit_antigen_eval[,NEXT_RCVD_90_DAYS:=(!is.na(NEXT_GIVEN_DATE)&NEXT_GIVEN_DATE<=VISIT_DATE+90)]
    #prep for return - keep any extra columns in original data set
-   visit_return[[i]] <- visit_antigen_eval[, ..cols_to_keep]
+   visits_evaluated[[ant]] <- visit_antigen_eval[, ..cols_to_keep]
    
   }
   if(verbose) message(paste0("Evaluation completed for all visits. Preparing return object as visit-antigen relation table."))
   #create the visit-antigen relation table for return
-  visit_return<-data.table::rbindlist(visit_return,fill=TRUE)
+  visits_evaluated<-data.table::rbindlist(visits_evaluated,fill=TRUE)
   
   #Ensure all expected return columns exist
   for (col in VISIT_RETURN_COLUMNS) {
-    if (!col %in% names(visit_return)) {
-      visit_return[, (col) := NA]
+    if (!col %in% names(visits_evaluated)) {
+      visits_evaluated[, (col) := NA]
       warning("Added missing column: ", col, " (filled with NA).")
     }
   }
-  data.table::setattr(visit_return, "processed", TRUE)
-  if(verbose) message("See ?VISIT_RETURN_DEFS for explanations of return columns.")
+  #add the processed attribute to the table to allow next step to proceed
+  data.table::setattr(visits_evaluated, "processed", TRUE)
+  if(verbose) message("See ?visits_evaluated_DEFS for explanations of return columns.")
   #return the relation table
-  return(visit_return)
+  return(visits_evaluated)
 }
 

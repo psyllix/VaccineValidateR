@@ -13,8 +13,8 @@
 #' @param antigens_of_interest Character vector of antigen names to include.
 #'   Default is \code{NULL}, in which case all antigens in the data are used.
 #' @param by_year Logical; if \code{TRUE}, group by VISIT_YEAR. Default \code{TRUE}.
-#' @param by_antigen Logical; if \code{TRUE}, group by ANTIGEN. Default \code{TRUE}.
-#' @param group_cols Optional character vector of additional grouping column names.
+#' @param group_cols Optional character vector of additional grouping column names. Default \code{TRUE}.
+#' @param first_per_group Optional limits to first visit per patient in each group.
 #' @param percent_var Character; which percentage column to pivot on in wide format.
 #'   Default is \code{"PCT_GIVEN_IF_DUE"}. Other valid options are
 #'   \code{"PCT_MISSED_IF_DUE"}, \code{"PCT_WITHIN_15_DAYS_IF_MISSED"},
@@ -43,8 +43,8 @@
 summarize_visit_evaluations <- function(visit_output,
                                         antigens_of_interest = NULL,
                                         by_year = TRUE,
-                                        by_antigen = TRUE,
                                         group_cols = NULL,
+                                        first_per_group = TRUE,
                                         percent_var = "PCT_GIVEN_IF_DUE",
                                         verbose  = TRUE,
                                         output_format = c("long", "wide")) {
@@ -60,7 +60,7 @@ summarize_visit_evaluations <- function(visit_output,
   
   # Ensure VISIT_YEAR exists if needed
   if (by_year && !"VISIT_YEAR" %in% names(dt)) {
-    dt[, VISIT_YEAR := data.table::year(VISIT_DATE)]
+    dt[, VISIT_YEAR := year_from_date(VISIT_DATE)]
   }
   
   # Filter antigens if requested
@@ -82,7 +82,6 @@ summarize_visit_evaluations <- function(visit_output,
   # Build grouping variables
   group_vars <- character()
   if (by_year)    group_vars <- c(group_vars, "VISIT_YEAR")
-  if (by_antigen) group_vars <- c(group_vars, "ANTIGEN")
   if (!is.null(group_cols)) {
     missing_groups <- setdiff(group_cols, names(dt))
     if (length(missing_groups) > 0) {
@@ -94,8 +93,12 @@ summarize_visit_evaluations <- function(visit_output,
   if (length(group_vars) == 0) {
     stop("No grouping variables selected. Enable by_year, by_antigen, or provide group_cols.")
   }
-  
-  # Summarize
+  # Collapse to first event in each group if requested
+  if (first_per_group) {
+    if (verbose) message("Restricting to first event per STUDY_ID within grouping vars.")
+    dt <- dt[order(VISIT_DATE)][, .SD[1], by = c("STUDY_ID", group_vars)]
+  }
+  ###### SUMMARIZATION STEPS ############
   summary_dt <- dt[, .(
     VISITS = .N,
     DUE    = sum(DUE, na.rm = TRUE),
@@ -135,6 +138,6 @@ summarize_visit_evaluations <- function(visit_output,
     return(results_wide[])
   }
   
-  if (verbose) message("Completed summarization at ", lubridate::now())
+  if (verbose) message("Completed summarization at ", Sys.time())
   return(summary_dt[])
 }

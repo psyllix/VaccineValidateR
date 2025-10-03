@@ -20,7 +20,7 @@ population_metrics<-function(patients,antigens,date_of_birth_column_name='DOB',s
   check_antigen_table(antigens)
   patients <- data.table::setDT(data.table::copy(patients))
   #antigens table is never modified, no need to create local copy
-  if (verbose) message("Validation complete. Starting population-level immunization metric evaluation at ", lubridate::now())
+  if (verbose) message("Validation complete. Starting population-level immunization metric evaluation at ", Sys.time())
   # --- Adolescent Metrics ---
   if (verbose) message("Calculating HEDIS and UTD Adolescent metrics...")
   
@@ -90,7 +90,7 @@ population_metrics<-function(patients,antigens,date_of_birth_column_name='DOB',s
     message("  • HEDIS_ADOL2: By age 13, adolescent received 2 HPV, ≥1 Tetanus dose age 10–13, and ≥1 MCV dose age 11–13 (count-based).")
     message("  • UTD_ADOL2: By age 13, adolescent completed: HPV (series-based), is up to date on Tetanus (evaluated by series completion rules), and received MCV (≥1 dose age 10–13).")
     
-    message("Completed evaluation of HEDIS and UTD population metrics at ", lubridate::now())
+    message("Completed evaluation of HEDIS and UTD population metrics at ", Sys.time())
   }
   # Store definitions as an attribute of patients
   population_metric_definitions <- list(

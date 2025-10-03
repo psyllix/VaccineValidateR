@@ -71,7 +71,7 @@ select_immunizations<-function(immunization_data,lim_cvx_map=NULL,antigen_to_eva
       stop(paste0("Column '", col_name, "' required but not found in immunization_data."))
     }
     if (col_name != std_name) {
-      setnames(immunization_data, col_name, std_name)
+      data.table::setnames(immunization_data, col_name, std_name)
     }
   }
   
@@ -85,7 +85,7 @@ select_immunizations<-function(immunization_data,lim_cvx_map=NULL,antigen_to_eva
       setnames(immunization_data,local_immunization_identifier_column_name,"LIM")
     }
   } else if (immunization_code_column_name != 'CVX') {
-    setnames(immunization_data,immunization_code_column_name,"CVX")
+    data.table::setnames(immunization_data,immunization_code_column_name,"CVX")
   }
   
   # Handle DATE_GIVEN / AGE_IMM_GIVEN
@@ -94,18 +94,8 @@ select_immunizations<-function(immunization_data,lim_cvx_map=NULL,antigen_to_eva
     stop("At least one of 'DATE_GIVEN' or 'AGE_IMM_GIVEN' must exist in immunization_data")
   }
   
-  if (immunization_date_given_column_name %in% colnames(immunization_data) &&
-      immunization_date_given_column_name != 'DATE_GIVEN') {
-    setnames(immunization_data,immunization_date_given_column_name,'DATE_GIVEN')
-  }
-  
-  if (age_at_immunization_column_name %in% colnames(immunization_data) &&
-      age_at_immunization_column_name != 'AGE_IMM_GIVEN') {
-    setnames(immunization_data,age_at_immunization_column_name,'AGE_IMM_GIVEN')
-  }
-  
-  # Decide which to use for downstream processing
-  date_switch <- if ("DATE_GIVEN" %in% colnames(immunization_data)) "DATE_GIVEN" else "AGE_IMM_GIVEN"
+  # Decide which to use for UID determinations
+  date_switch <- if (age_at_immunization_column_name %in% colnames(immunization_data)) age_at_immunization_column_name else immunization_date_given_column_name
   
   #add CVX to immunization data if not already present
   if(!"CVX" %in% colnames(immunization_data)){
@@ -119,16 +109,7 @@ select_immunizations<-function(immunization_data,lim_cvx_map=NULL,antigen_to_eva
   if (verbose) message("CVX codes employed to determine antigens within immunizations. Merging data. Please Wait...")
   
   #isolate antigens of interest in order to discard extraneous data
-  antigens_list<-SYSTEM_ANTIGENS
-  #if there is a live vaccine in antigens_to_eval OR antigens_to_eval is ALL we need to keep all like vaccines
-  if(!"ALL" %in% antigen_to_eval){
-      antigens_list<-intersect(antigens_list, antigen_to_eval)
-  }
-  #Hanld Live Virus Antigens
-  if(any(c('MMR','VZV','INFLUENZA') %in% antigens_list)==TRUE){
-    antigens_list <- c(antigens_list, 'MMR','VZV','INFLUENZA')#ensure all live antigens kept (non - enteral)
-  }
-  antigens_list<-unique(antigens_list)#force only 1/antigen
+  antigens_list<-build_antigen_list(antigen_to_eval=antigen_to_eval,verbose=verbose)
   #confirm that at least 1 antigen is being evaluated fromthe approved list
   if (length(antigens_list) == 0L) {
     if (verbose) message("No matching antigens requested; returning 0 rows.")
@@ -137,7 +118,7 @@ select_immunizations<-function(immunization_data,lim_cvx_map=NULL,antigen_to_eva
   #add the antigens that matter to the immunization_data list
   for (antigen in antigens_list) {
     # CVX = column of codes, cvx = global mapping list
-    immunization_data[, (antigen) := CVX %in% cvx[[antigen]] ]
+    immunization_data[, (antigen) := CVX %in% cvx[[antigen]]]
   }
   
   
@@ -146,9 +127,6 @@ select_immunizations<-function(immunization_data,lim_cvx_map=NULL,antigen_to_eva
   immunization_data <- immunization_data[rows_to_keep]
   if(verbose) message("Content restricted to antigens of interest. Finalizing content.")
   #rebuild the immunization list 
-  #add columns of interest
-  if(!"GIVEN_STATUS" %in% colnames(immunization_data)){immunization_data[,GIVEN_STATUS:=1]}
-  if(!"ADMIN_LOCATION" %in% colnames(immunization_data)){immunization_data[,ADMIN_LOCATION:=NA]}
   #create the processed column
   immunization_data<-data.table::as.data.table(unique(immunization_data,by=c('STUDY_ID','CVX',date_switch)))
   if(verbose) message("This table can be sent to validate_immunizations function directly and will not be reprocessed.")
