@@ -169,6 +169,7 @@ evaluate_visits<-function(visit_data
       STUDY_ID
      ,JOIN_DATE
      ,DATE_GIVEN
+     ,LAST_GIVEN=DATE_GIVEN
      ,DELAYED_LAST_DOSE=DELAYED
      ,NEXT_DOSE_MIN
      ,NEXT_DOSE_RECOMMENDED

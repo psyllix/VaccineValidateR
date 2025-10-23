@@ -11,7 +11,7 @@
 #' @param visits A \code{data.table} of patient visits including at least
 #'   \code{STUDY_ID} and \code{VISIT_DATE}.
 #' @param years A numeric vector of evaluation years to include in the summary.
-#' @param metrics_of_interest Character vector of metric names (e.g.,
+#' @param metrics Character vector of metric names (e.g.,
 #'   \code{"HEDIS_ADOL2"}, \code{"UTD_CIS10"}). These must exist as columns in
 #'   \code{patients}. If not specified, will return all possible metrics on the patient table.
 #' @param id_col Column name in \code{patients} identifying unique patients.
@@ -34,16 +34,15 @@
 #' @details
 #' Evaluation age is inferred from the metric name:
 #' \itemize{
-#'   \item CIS metrics (\code{"CIS"}) → evaluated at age 2
-#'   \item ADOL metrics (\code{"ADOL"}) → evaluated at age 13
-#'   \item All other metrics → default to age 18
+#'   \item Metrics containing \code{"CIS"} → evaluated at age 2 (Childhood)
+#'   \item Metrics containing \code{"ADOL"} → evaluated at age 13 (Adolescent)
+#'   \item All others → evaluated at age 18 (Default/young adult)
 #' }
-#'
 #' @export
 summarize_population_metrics <- function(patients, 
                                          visits, 
-                                         years, 
-                                         metrics_of_interest = NULL,
+                                         years = NULL, 
+                                         metrics = NULL,
                                          id_col   = "STUDY_ID", 
                                          dob_col  = "DOB",
                                          verbose  = TRUE,
@@ -56,11 +55,11 @@ summarize_population_metrics <- function(patients,
     stop("Patient table is missing metric definitions. ",
          "Please run population_metrics() first.")
   }
-  # If metrics_of_interest not supplied, default to all available
-  if (is.null(metrics_of_interest)) {
-    metrics_of_interest <- names(definitions)
-    if (verbose) message("metrics_of_interest not provided. Using all available metrics: ",
-                         paste(metrics_of_interest, collapse = ", "))
+  # If metrics not supplied, default to all available
+  if (is.null(metrics)) {
+    metrics <- names(definitions)
+    if (verbose) message("metrics not provided. Using all available metrics: ",
+                         paste(metrics, collapse = ", "))
   }
   # Ensure data.table
   patients <- data.table::setDT(data.table::copy(patients))
@@ -74,12 +73,13 @@ summarize_population_metrics <- function(patients,
   if (verbose) message("Mapping last visit year... Please wait ~1 minute...")
   
   # collapse to one row per id_col
-  visit_map <- visits[, .(LAST_VISIT_YEAR = max(VISIT_DATE, na.rm = TRUE),
-                          FIRST_VISIT_YEAR = min(VISIT_DATE, na.rm = TRUE)
-                          ), by = id_col]
-  
-  # convert to year just once
-  visit_map[, LAST_VISIT_YEAR := data.table::year(LAST_VISIT_YEAR)]
+    visit_map <- visits[, .(
+      LAST_VISIT_DATE  = max(VISIT_DATE, na.rm = TRUE),
+      FIRST_VISIT_DATE = min(VISIT_DATE, na.rm = TRUE)
+    ), by = id_col][, `:=`(
+      LAST_VISIT_YEAR  = year(LAST_VISIT_DATE),
+      FIRST_VISIT_YEAR = year(FIRST_VISIT_DATE)
+    )][, c("LAST_VISIT_DATE", "FIRST_VISIT_DATE") := NULL]
   
   # join back onto patients
   patients <- visit_map[patients, on = id_col]
@@ -87,10 +87,16 @@ summarize_population_metrics <- function(patients,
   if (verbose) message("Mapped last visit year onto patients")
   
   # add birth year (vectorized)
-  patients[, BIRTH_YEAR := data.table::year(get(dob_col))]
+  patients[, BIRTH_YEAR := data.table::fifelse(!is.na(get(dob_col)),
+                                               data.table::year(get(dob_col)), NA_integer_)]
   if (verbose) message("Established birth year")
+  if (missing(years) || is.null(years)) {
+    years <- sort(unique(patients$BIRTH_YEAR + c(2, 13)))
+    if (verbose) message("No years specified. Using all years patients in sample reach ages 2 and age 13.")
+  }
+  
   results_list <- list()
-  for (m in metrics_of_interest) {
+  for (m in metrics) {
     if (!m %in% names(patients)) {
       warning(sprintf("Metric %s not found in patients table, skipping.", m))
       next
@@ -112,10 +118,15 @@ summarize_population_metrics <- function(patients,
     pat_tmp[, EVAL_YEAR := BIRTH_YEAR + eval_age]
     
     # Only keep patients still in cohort at evaluation year
-    pat_tmp[, IN_COHORT := (!is.na(LAST_VISIT_YEAR) & LAST_VISIT_YEAR >= EVAL_YEAR&!is.na(LAST_VISIT_YEAR)& FIRST_VISIT_YEAR<EVAL_YEAR)]
+    pat_tmp <- pat_tmp[!is.na(EVAL_YEAR) &
+                         !is.na(LAST_VISIT_YEAR) & 
+                         !is.na(FIRST_VISIT_YEAR) &
+                         EVAL_YEAR %in% years & 
+                         LAST_VISIT_YEAR  >= EVAL_YEAR &
+                         FIRST_VISIT_YEAR <  EVAL_YEAR]
     
     # Summarize by evaluation year
-    dt <- pat_tmp[IN_COHORT == TRUE & EVAL_YEAR %in% years,
+    dt <- pat_tmp[,
                   .(IS_UTD = sum(get(m), na.rm = TRUE),
                     N      = .N),
                   by = EVAL_YEAR][order(EVAL_YEAR)]
