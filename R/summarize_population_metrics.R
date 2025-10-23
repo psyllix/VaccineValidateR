@@ -73,12 +73,12 @@ summarize_population_metrics <- function(patients,
   if (verbose) message("Mapping last visit year... Please wait ~1 minute...")
   
   # collapse to one row per id_col
-    visit_map <- visits[, .(
+  visit_map <- visits[, .(
       LAST_VISIT_DATE  = max(VISIT_DATE, na.rm = TRUE),
       FIRST_VISIT_DATE = min(VISIT_DATE, na.rm = TRUE)
     ), by = id_col][, `:=`(
-      LAST_VISIT_YEAR  = year(LAST_VISIT_DATE),
-      FIRST_VISIT_YEAR = year(FIRST_VISIT_DATE)
+      LAST_VISIT_YEAR  = data.table::year(LAST_VISIT_DATE),
+      FIRST_VISIT_YEAR = data.table::year(FIRST_VISIT_DATE)
     )][, c("LAST_VISIT_DATE", "FIRST_VISIT_DATE") := NULL]
   
   # join back onto patients

@@ -19,6 +19,18 @@ population_metrics<-function(patients,antigens,date_of_birth_column_name='DOB',s
   #validation step
   check_antigen_table(antigens)
   patients <- data.table::setDT(data.table::copy(patients))
+  antigens <- data.table::setDT(data.table::copy(antigens))
+  # Map study id columns to 'STUDY_ID' consistently
+  if (!study_id_column_name %in% names(patients)) {
+    stop("patients is missing study id column: ", study_id_column_name)
+  }
+  if (!study_id_column_name %in% names(antigens)) {
+    stop("antigens is missing study id column: ", study_id_column_name)
+  }
+  if (study_id_column_name != "STUDY_ID") {
+    data.table::setnames(patients, study_id_column_name, "STUDY_ID")
+    data.table::setnames(antigens, study_id_column_name, "STUDY_ID")
+  }
   #antigens table is never modified, no need to create local copy
   if (verbose) message("Validation complete. Starting population-level immunization metric evaluation at ", Sys.time())
   # --- Adolescent Metrics ---

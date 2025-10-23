@@ -12,9 +12,18 @@
 #'   and series/delay fields (see \code{ANTIGEN_RETURN_COLUMNS}).
 #' @param patients A \code{data.table} of patient info, with at least \code{STUDY_ID} and \code{DOB}.
 #'   Required if DOB is not present in \code{visit_data}.
-#' @param full_return Logical. Default is \code{FALSE}. If \code{TRUE}, returns all visit–antigen combinations.
-#'   If \code{FALSE}, excludes rows where the patient has aged out, the series was completed previously,
-#'   or the visit occurred before the earliest allowable dose date.
+#' @param return_mode Character; controls which visit–antigen rows are returned.
+#'   Must be one of:
+#'   \itemize{
+#'     \item \code{"FULL"} — return *all* evaluated visit–antigen combinations,
+#'           including those where the patient was too young, aged out, or the series was completed.
+#'     \item \code{"POSSIBLE"} — return only visit–antigen combinations that were
+#'           at least theoretically possible (after minimum age and interval),
+#'           but exclude those where the antigen was no longer recommended or series already complete.
+#'     \item \code{"DUE"} — return only visit–antigen combinations where the immunization
+#'           would be recommended at that visit.
+#'   }
+#'   Default is \code{"POSSIBLE"}.
 #' @param antigen_to_eval Character vector of antigens to evaluate. Default is \code{"ALL"}.
 #' @param study_id_column_name Name of the column in \code{visit_data} containing study IDs.
 #'   Default is \code{"STUDY_ID"}.
@@ -72,7 +81,7 @@
 evaluate_visits<-function(visit_data
                           ,antigens#should only ever be the output from validate_immunizations
                           ,patients=NULL
-                          ,full_return=FALSE
+                          ,return_mode=c("POSSIBLE","FULL","DUE")#DELAYED
                           ,antigen_to_eval=c('ALL')
                           ,study_id_column_name='STUDY_ID'
                           ,date_of_birth_column_name='DOB'
@@ -226,10 +235,27 @@ evaluate_visits<-function(visit_data
    }
    else
      visit_antigen_eval[,AGE_OUT:=DOB+yr_no_grace(20)]
-   
-  #IF NOT FULL APPLY THE RETURN LIMIT HERE (EARLIEST POSSIBLE POINT TO REMOVE VISITS)
-  if(full_return==FALSE){
-    visit_antigen_eval<-visit_antigen_eval[VISIT_DATE<AGE_OUT&VISIT_DATE>=NEXT_DOSE_MIN&!COMPLETED_PREVIOUSLY]
+  
+  #DETERMINE IF IS DUE AT THE VISIT
+  
+  visit_antigen_eval[,IS_DUE:=(VISIT_DATE<AGE_OUT#CANNOT BE DUE IF TOO OLD
+                               &!COMPLETED_PREVIOUSLY#CANNOT BE DUE IF COMPLETED PREVIOUSLY
+                               &!is.na(NEXT_DOSE_RECOMMENDED)#MUST HAVE A NEXT RECOMMENDED DATE TO BE DUE - ALL VISITS SHOULD HAVE A RECOMMENDED NEXT DOSE IF NOT COMPLETED AND NOT AGED OUT
+                               &(NEXT_DOSE_RECOMMENDED<=VISIT_DATE)#AND THE DATE RECOMMENDED IS BEFORE OR ON THE VISIT DATE
+  )]
+  visit_antigen_eval[is.na(IS_DUE),IS_DUE:=FALSE]
+  # Apply return_mode filters ------------------------------------------
+  if (return_mode == "POSSIBLE") {
+    if (verbose) message("Returning visits where immunization could have been given (after min date, before age-out, not completed).")
+    visit_antigen_eval <- visit_antigen_eval[
+      VISIT_DATE < AGE_OUT &
+        VISIT_DATE >= NEXT_DOSE_MIN &
+        !COMPLETED_PREVIOUSLY
+    ]
+    
+  } else if (return_mode=="DUE") {
+    if (verbose) message("Returning visits where vaccine was due at time of visit.")
+    visit_antigen_eval <- visit_antigen_eval[IS_DUE == TRUE]
   }
   #JOIN TOMORROW
    if(verbose) message(paste0("--Add in content from the next possible antigen given."))
@@ -242,15 +268,7 @@ evaluate_visits<-function(visit_data
      ,DELAYED_NEXT_DOSE=DELAYED
      ,NEXT_DATE_GIVEN=DATE_GIVEN
    )][visit_antigen_eval, on = .(STUDY_ID,JOIN_DATE), roll = -Inf]
-   
-   
-   #DETERMINE IF IS DUE AT THE VISIT
-   visit_antigen_eval[,IS_DUE:=(VISIT_DATE<AGE_OUT#CANNOT BE DUE IF TOO OLD
-                            &!COMPLETED_PREVIOUSLY#CANNOT BE DUE IF COMPLETED PREVIOUSLY
-                            &!is.na(NEXT_DOSE_RECOMMENDED)#MUST HAVE A NEXT RECOMMENDED DATE TO BE DUE - ALL VISITS SHOULD HAVE A RECOMMENDED NEXT DOSE IF NOT COMPLETED AND NOT AGED OUT
-                            &(NEXT_DOSE_RECOMMENDED<=VISIT_DATE)#AND THE DATE RECOMMENDED IS BEFORE OR ON THE VISIT DATE
-   )]
-
+   #JOIN TOMORROW
    #DETERMINE CONCEPTS FOR EACH ANTIGEN
    visit_antigen_eval[,ANTIGEN:=ant]
    visit_antigen_eval[,AGED_OUT:=!(VISIT_DATE<AGE_OUT)]#SHOULD ALWAYS BE FALSE IF NOT FULL RETURN

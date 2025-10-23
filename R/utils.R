@@ -358,7 +358,7 @@ make_a_date <- function(DT, col) {
 #' @param primary_dt A \code{data.table} (e.g., immunization_data or visit_data).
 #' @param patients Optional \code{data.table} of patient info with \code{STUDY_ID} and DOB.
 #' @param study_id_column_name Name of the study ID column in the data (default \code{"STUDY_ID"}).
-#' @param dob_column_name Name of the DOB column in the input data/patients (default \code{"DOB"}).
+#' @param date_of_birth_column_name  Name of the DOB column in the input data/patients (default \code{"DOB"}).
 #' @param verbose Logical, print progress messages (default \code{TRUE}).
 #'
 #' @return \code{data.table} = \code{primary_dt} with a standardized \code{DOB} column
@@ -395,8 +395,8 @@ apply_dob <- function(primary_dt,
   if (study_id_column_name != "STUDY_ID") {data.table::setnames(dt, study_id_column_name, "STUDY_ID")}
   
   # --- Case 1: DOB present in primary_dt and already a Date ---
-  if (dob_column_name %in% names(dt) && inherits(dt[[dob_column_name]], "Date")) {
-    if (dob_column_name != "DOB") data.table::setnames(dt, dob_column_name, "DOB")
+  if (date_of_birth_column_name %in% names(dt) && inherits(dt[[date_of_birth_column_name]], "Date")) {
+    if (date_of_birth_column_name != "DOB") data.table::setnames(dt, date_of_birth_column_name, "DOB")
     if (verbose) message("DOB present in ",primary_name," as Date; patients not accessed if supplied. No further processing needed")
     return(dt)
   }
@@ -412,8 +412,8 @@ apply_dob <- function(primary_dt,
     if (study_id_column_name != "STUDY_ID") data.table::setnames(pats, study_id_column_name, "STUDY_ID")
     
     # Standardize DOB
-    if (!dob_column_name %in% names(pats)) stop("Patients must include a DOB column.")
-    if (dob_column_name != "DOB") data.table::setnames(pats, dob_column_name, "DOB")
+    if (!date_of_birth_column_name %in% names(pats)) stop("Patients must include a DOB column.")
+    if (date_of_birth_column_name != "DOB") data.table::setnames(pats, date_of_birth_column_name, "DOB")
     
     # Normalize DOB type
     if (!inherits(pats$DOB, "Date")) {make_a_date(pats, "DOB")}
@@ -427,9 +427,9 @@ apply_dob <- function(primary_dt,
   }
   
   # --- Case 3: Derive DOB from primary_dt ---
-  if (!dob_column_name %in% names(dt)) {stop("Need DOB in ",primary_name," if no patients dataset provided.")}
+  if (!date_of_birth_column_name %in% names(dt)) {stop("Need DOB in ",primary_name," if no patients dataset provided.")}
   if (verbose) message("Deriving DOB from ",primary_name," (no patients dataset). Least optimal solution.")
-  if (dob_column_name != "DOB") data.table::setnames(dt, dob_column_name, "DOB")
+  if (date_of_birth_column_name != "DOB") data.table::setnames(dt, date_of_birth_column_name, "DOB")
   if (!inherits(dt$DOB, "Date")) make_a_date(dt, "DOB")
   #T/C If this is fast enough swap case 2 and case 3 if DOB is not a date on patients table.
   #return snake

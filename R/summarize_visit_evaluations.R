@@ -161,6 +161,7 @@ summarize_visit_evaluations <- function(visit_output,
     DELAYED_PRIOR = sum(DELAYED_PRIOR_DOSE, na.rm = TRUE),
     DELAYED_VISIT = sum(DELAYED_VISIT_DOSE, na.rm = TRUE),
     DELAYED_NEXT  = sum(DELAYED_NEXT_DOSE, na.rm = TRUE),
+    NO_FUTHER_DOSES  = sum(is.na(NEXT_GIVEN_DATE), na.rm = TRUE),
     GIVEN_WITHIN_15_DAYS = sum(MISSED & NEXT_RCVD_15_DAYS, na.rm = TRUE),
     GIVEN_WITHIN_30_DAYS = sum(MISSED & NEXT_RCVD_30_DAYS, na.rm = TRUE),
     GIVEN_WITHIN_90_DAYS = sum(MISSED & NEXT_RCVD_90_DAYS, na.rm = TRUE)
