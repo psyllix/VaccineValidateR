@@ -57,19 +57,43 @@ library(VaccineValidateR)
 
 ---
 
-# Example immunization data
+# Example immunization data validation
+patients<-data.table::data.table(
+	STUDY_ID = 1,
+	DOB = as.Date("2022-01-01")
+)
+visits<-data.table::data.table(
+	STUDY_ID = 1,
+	VISIT_ID = 1,
+	VISIT_DATE = as.Date("2022-01-01")
+)
+
 data <- data.table::data.table(
   STUDY_ID = 1,
   CVX = c("8", "8"),#HEPATITIS B
   AGE_IMM_GIVEN = c("0","31"),
   DATE_GIVEN = as.Date(c("2022-01-01", "2022-02-01"))#BIRTH AND 1 MONTH DOSE
 )
+# Clean data and limit to antigens of interest
+data<-select_immunizations(data,antigen_to_eval = 'ALL')
 
-# Validate
-result <- VaccineValidateR::validation(data)
+# Validate data
+result <- VaccineValidateR::validate_immunizaions(data)
 
 # Check antigen-level results
 head(result$antigens)
+
+#now you can use other functions to evaluate the content
+patients_output<-evaluate_population(patients=patients,antigens=result$antigens)
+summary<-summarize_population_metrics(patients = patients_output,visits = visits)
+
+visit_output<-evaluate_visits(visits,patients=patients,antigens=result$antigens,antigen_to_eval = c("ALL"),return_mode = "DUE")
+#Question: How are we at completing HPV immunizations at the first opportunity during each year
+visit_evaluations<-summarize_visit_evaluations(visit_output = visit_output
+                                         ,group_col = c('SYSTEM','VISIT_MODALITY')
+                                         ,time_slice = "YEAR"
+                                         ,antigens_of_interest = c("HPV"))
+
 ```
 ### Status
 
@@ -82,13 +106,16 @@ New features to be added as time permits. Ideas welcome.
 ### Acknowledgements
 The author wished to acknowledge colleages and early users for their feedback, guidance, and suggestions including Dr. Alex Fiks, Dr. Robert Grundmeier, Mary Kate Kelly, and Abbie Steiner.
 
+###Citation:
+Michel JJ. VaccineValidateR: An R package for validating pediatric immunizations and evaluating vaccination opportunities using ACIP-aligned logic. The Children’s Hospital of Philadelphia, 2025. Available at: https://github.com/psyllix/VaccineValidateR
+
 ### Non-Commercial Research License
 ---
 This project is released under a Non-Commercial Research License. For commercial use, please contact michelj@chop.edu for licensing terms.
 Copyright ©2025 The Children's Hospital of Philadelphia. See full licenses statement for more details.
 Permission is hereby granted, free of charge, to any person or organization to use, copy, modify, and distribute this software and associated documentation files (the “Software”), for academic, research, or educational purposes only, subject to the following conditions:
 
-#### Attribution
+### Attribution
 Appropriate credit must be given to the authors in any use, publication, or derivative work of the Software.
 
 #### Non-Commercial Use Only
