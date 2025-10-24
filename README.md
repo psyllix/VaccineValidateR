@@ -106,7 +106,7 @@ New features to be added as time permits. Ideas welcome.
 ### Acknowledgements
 The author wished to acknowledge colleages and early users for their feedback, guidance, and suggestions including Dr. Alex Fiks, Dr. Robert Grundmeier, Mary Kate Kelly, and Abbie Steiner.
 
-###Citation:
+### Citation:
 Michel JJ. VaccineValidateR: An R package for validating pediatric immunizations and evaluating vaccination opportunities using ACIP-aligned logic. The Children’s Hospital of Philadelphia, 2025. Available at: https://github.com/psyllix/VaccineValidateR
 
 ### Non-Commercial Research License
