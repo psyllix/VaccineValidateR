@@ -1,26 +1,29 @@
 Package: VaccineValidateR
 Type: Package
 Title: Vaccine Validator for United States Childhood Immunization Schedules
-Version: 0.0.1.0
-Date: 2025-09-11
-Author: Jeremy J Michel <michelj@chop.edu>
+Version: 1.0.0
+Date: 2025-11-24
+Authors@R: 
+    person("Jeremy J.", "Michel", 
+           email = "michelj@chop.edu", 
+           role = c("aut", "cre"))
 Maintainer: Jeremy J Michel <michelj@chop.edu>
-License: BSD-2
-Description: 
-    VaccineValidateR provides tools to clean, standardize, and validate childhood immunization data 
-    according to US ACIP recommendations and immunize.org guidance. The package allows mapping 
-    local immunization codes to CVX codes, selecting immunizations of interest, and filtering data 
-    for analysis. It supports evaluation of dose validity, series completion, and timing checks 
-    for routine and catch-up childhood vaccines, including COVID-19, Influenza, Tetanus, HIB, 
-    PCV, Polio, and other common antigens. The package facilitates reproducible and transparent 
-    vaccine data validation workflows for research and clinical quality improvement.
+License: file LICENSE
+Description: VaccineValidateR provides tools to clean, standardize, and validate 
+    childhood immunization data according to U.S. ACIP recommendations and 
+    Immunize.org guidance. It supports mapping of local immunization codes to 
+    CVX, validation of dose timing and series completion, and automated detection 
+    of invalid or out-of-sequence doses for routine and catch-up schedules 
+    (including COVID-19, Influenza, Tetanus, HIB, PCV, and Polio). The package 
+    facilitates reproducible vaccine validation workflows for research and 
+    clinical quality improvement.
 Imports:
     data.table,
     fasttime
 Encoding: UTF-8
+Depends: R (>= 4.2)
 RoxygenNote: 7.3.3
+Roxygen: list(markdown = TRUE, roclets = c("namespace", "rd"))
 URL: https://psyllix.github.io/VaccineValidateR
 BugReports: https://github.com/psyllix/VaccineValidateR/issues
-Suggests: 
-    testthat (>= 3.0.0)
-Config/testthat/edition: 3
+

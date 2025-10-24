@@ -23,17 +23,18 @@ reference:
   - title: "Functions"
     desc: "All exported functions in VaccineValidateR."
     contents:
-      - population_metrics
-      - validate_immunizations
-      - evaluate_visits
       - create_cohort
       - select_immunizations
-      - summarize_population_metrics
+      - validate_immunizations
+      - evaluate_visits
+      - evaluate_population
+      - summarize_population
+      - summarize_visits
       - build_cvx_map
       - cvx
       - supported_antigens
       - update_cvx_map
-      - summarize_visit_evaluations
+      - apply_dob
 
 # ------------------------------------------------------------------
 # Articles / Vignettes

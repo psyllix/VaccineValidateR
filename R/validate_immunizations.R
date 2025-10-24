@@ -29,11 +29,11 @@
 #'   \item{immunizations}{Product-level immunization data after processing. 
 #'     Typical columns include:
 #'     \itemize{
-#'       \item \code{STUDY_ID} – patient identifier
-#'       \item \code{PRODUCT} – vaccine product name
-#'       \item \code{CVX} – vaccine CVX code (integer)
-#'       \item \code{DATE_GIVEN} – immunization administration date
-#'       \item \code{AGE_IMM_GIVEN} – age in days at administration
+#'       \item \code{STUDY_ID} - patient identifier
+#'       \item \code{PRODUCT} - vaccine product name
+#'       \item \code{CVX} - vaccine CVX code (integer)
+#'       \item \code{DATE_GIVEN} - immunization administration date
+#'       \item \code{AGE_IMM_GIVEN} - age in days at administration
 #'       \item Antigen flags (e.g., \code{POLIO}, \code{MMR}, \code{HIB}) indicating antigen mapping
 #'     }}
 #'   \item{antigens}{Antigen-level dose data including validation checks.
@@ -157,7 +157,7 @@
           ,local_immunization_identifier_column_name=local_immunization_identifier_column_name)
         if(verbose){message(paste0("Preprocessing completed."))}
       }
-      else{if (verbose) message("Skipping preprocessing — immunization_data already marked as processed.")}
+      else{if (verbose) message("Skipping preprocessing - immunization_data already marked as processed.")}
       # Immunization date processing - preference for Age modifications
       if(verbose){message(paste0("Immunization Date processing starting at @ ",Sys.time()))}
       
@@ -420,7 +420,7 @@
       #MCV: 
       # Adolescents who receive a first dose after their 16th birthday do not need a booster dose unless they become at increased risk for meningococcal disease. 
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="MCV"&AGE_IMM_GIVEN>=yr_no_grace(16),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DOSE_COMPLETES_SERIES=TRUE,DELAYED=TRUE)]
-      # Guidance updated (2020): ACIP recommends a single dose of MenACWY at age 11 or 12 years followed by a booster dose administered at age 16 years (Table 2). Children who received MenACWY at age 10 years do not need an additional dose at age 11–12 years but should receive the booster dose at age 16 years. Children who received MenACWY before age 10 years and with no ongoing risk for meningococcal disease for which boosters are recommended should still receive MenACWY according to the recommended adolescent schedule, with the first dose at age 11–12 years and a booster dose at age 16 years. For example, a healthy child who received MenACWY at age 9 years because of short-term travel to a country where meningococcal disease is hyperendemic or epidemic and who is not otherwise at increased risk should receive the MenACWY at age 11–12 years according to the recommended ACIP adolescent vaccination schedule. Children who received MenACWY before age 10 years and for whom boosters are recommended because of an ongoing increased risk for meningococcal disease (e.g., those with complement deficiency, HIV infection, or asplenia) should follow the booster schedule for persons at increased risk.
+      # Guidance updated (2020): ACIP recommends a single dose of MenACWY at age 11 or 12 years followed by a booster dose administered at age 16 years (Table 2). Children who received MenACWY at age 10 years do not need an additional dose at age 11-12 years but should receive the booster dose at age 16 years. Children who received MenACWY before age 10 years and with no ongoing risk for meningococcal disease for which boosters are recommended should still receive MenACWY according to the recommended adolescent schedule, with the first dose at age 11-12 years and a booster dose at age 16 years. For example, a healthy child who received MenACWY at age 9 years because of short-term travel to a country where meningococcal disease is hyperendemic or epidemic and who is not otherwise at increased risk should receive the MenACWY at age 11-12 years according to the recommended ACIP adolescent vaccination schedule. Children who received MenACWY before age 10 years and for whom boosters are recommended because of an ongoing increased risk for meningococcal disease (e.g., those with complement deficiency, HIV infection, or asplenia) should follow the booster schedule for persons at increased risk.
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="MCV"&AGE_IMM_GIVEN>=yr_no_grace(10),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(13))
                                                                                                                   ,NEXT_DOSE_RECOMMENDED=ifelse(AGE_IMM_GIVEN<yr_no_grace(16)
                                                                                                                                                 ,pmax(DOB+yr_no_grace(16),DATE_GIVEN+wk_no_grace(8))
@@ -565,10 +565,10 @@
                                                                                                                                               ,NEXT_DOSE_MIN=pmax(DATE_GIVEN+wk_no_grace(12),DOB+AGE_FIRST_DOSE+wk_no_grace(21))
                                                                                                                                               )]
       #MCV: 
-      # Adolescents who receive their first dose at age 13–15 years should receive a booster dose at age 16–18 years; 
+      # Adolescents who receive their first dose at age 13-15 years should receive a booster dose at age 16-18 years; 
       # the booster dose can be administered at any time, as long as a minimum interval of 8 weeks between doses is maintained. 
       # Adolescents who receive a first dose after their 16th birthday do not need a booster dose unless they become at increased risk for meningococcal disease. 
-      # Persons aged 19–21 years who have not received a dose after their 16th yr_no_grace(0)day can receive a single MenACWY dose as part of catch-up vaccination. MenACWY vaccines are interchangeable; the same vaccine product is recommended, but not required, for all doses. MenACWY vaccines can be administered simultaneously with other vaccines indicated for this age group, but at a different anatomic site, if feasible. MenACWY-TT, which is conjugated to tetanus toxoid, is only licensed for the prevention of meningococcal disease; use of this vaccine does not replace doses or affect the dosing intervals of routinely recommended tetanus toxoid–containing vaccines in any age group.
+      # Persons aged 19-21 years who have not received a dose after their 16th yr_no_grace(0)day can receive a single MenACWY dose as part of catch-up vaccination. MenACWY vaccines are interchangeable; the same vaccine product is recommended, but not required, for all doses. MenACWY vaccines can be administered simultaneously with other vaccines indicated for this age group, but at a different anatomic site, if feasible. MenACWY-TT, which is conjugated to tetanus toxoid, is only licensed for the prevention of meningococcal disease; use of this vaccine does not replace doses or affect the dosing intervals of routinely recommended tetanus toxoid-containing vaccines in any age group.
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="MCV"&AGE_IMM_GIVEN>=yr_with_grace(16)&INTERVAL>=wk_with_grace(8),`:=`(DOSE_COUNTER=counter,VALID=TRUE,DOSE_COMPLETES_SERIES=TRUE,DELAYED=(AGE_IMM_GIVEN>yr_no_grace(17)&INTERVAL>mon_with_grace(6)))]
       #MENB:Note: MenB-FHbp and MenB-4C are not interchangeable
       #MENB doses given > 4 wks after dose 1 are valid historically
@@ -930,9 +930,9 @@
     if(verbose){message(paste0("Total administrations validated: ",antigens_complete[,.N]))}
     gc()
     ##### HANDLE OF PPV2: NOTES - TO BE ADDED within Immunocompromised build#####
-    # Among persons aged ≥2 years with medical indications to receive both PCV13 and PPSV23 in a series, 
-    # including adults aged ≥65 years with immunocompromising conditions, functional or anatomic asplenia, cochlear implants, or cerebrospinal fluid leaks, 
-    # a dose of PPSV23 should be given ≥8 weeks after a dose of PCV13.
+    # Among persons aged >=2 years with medical indications to receive both PCV13 and PPSV23 in a series, 
+    # including adults aged >=65 years with immunocompromising conditions, functional or anatomic asplenia, cochlear implants, or cerebrospinal fluid leaks, 
+    # a dose of PPSV23 should be given >=8 weeks after a dose of PCV13.
     # If a dose of PPSV23 is inadvertently given earlier than the recommended interval, the dose need not be repeated.
     # 1. do not need to check intervals for PPV23
     # 2. do need to check minimum age (24 months) (Immunize.org - does not generate an immune response)

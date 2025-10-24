@@ -43,18 +43,18 @@ select_immunizations(
 }
 \value{
 A \code{data.table} containing the refined and filtered immunization data with an added attribute \code{processed} indicating the table is ready.
-  An attribute \code{antigens_used} (character vector) is attached, recording
-  which antigens were evaluated.
+An attribute \code{antigens_used} (character vector) is attached, recording
+which antigens were evaluated.
 }
 \description{
 Filters and processes immunization data by mapping antigens to CVX codes, ensuring that the correct immunization data is processed and returned.
 }
 \details{
-Antigen selection has special handling for live, non-enteral vaccines 
-(e.g., \code{MMR}, \code{VZV}, intranasal \code{INFLUENZA}). 
-If any of these are included in \code{antigen_to_eval} or present in the 
-dataset, all such live antigens are retained together. This ensures that 
-live-virus scheduling rules (e.g., spacing between doses) are preserved 
+Antigen selection has special handling for live, non-enteral vaccines
+(e.g., \code{MMR}, \code{VZV}, intranasal \code{INFLUENZA}).
+If any of these are included in \code{antigen_to_eval} or present in the
+dataset, all such live antigens are retained together. This ensures that
+live-virus scheduling rules (e.g., spacing between doses) are preserved
 during downstream validate_immunizations.
 }
 \examples{

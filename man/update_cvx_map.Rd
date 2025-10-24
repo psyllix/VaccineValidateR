@@ -16,7 +16,7 @@ Invisibly returns the updated \code{\link{CVX}} object.
 }
 \description{
 Rebuilds the global \code{\link{CVX}} constant with an optional
-local LIM→CVX map. This updates the copy inside the package
+local LIM to CVX map. This updates the copy inside the package
 namespace so that all downstream functions will see the new
 mapping.
 }
@@ -24,7 +24,7 @@ mapping.
 # Refresh CVX mapping with default references
 update_cvx_map()
 
-# Refresh with custom local LIM→CVX mapping
+# Refresh with custom local LIM to CVX mapping
 my_map <- data.table::data.table(LIM = "X123", PRODUCT = "Test", CVX = 999)
 update_cvx_map(my_map)
 

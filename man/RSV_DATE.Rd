@@ -7,11 +7,11 @@
 \format{
 Constants of class \code{Date}.
 \describe{
-  \item{RSV_DATE}{2023-09-01, Beyfortus release (prior = palivizumab).}
-  \item{MENB_DATE}{2024-10-24, MenB guidance change.}
-  \item{OPV_DATE}{2016-04-01, OPV rule update.}
-  \item{HPV_DATE}{2016-04-01, HPV schedule update.}
-  \item{PCV_DATE}{2010-02-24, PCV13 release.}
+\item{RSV_DATE}{2023-09-01, Beyfortus release (prior = palivizumab).}
+\item{MENB_DATE}{2024-10-24, MenB guidance change.}
+\item{OPV_DATE}{2016-04-01, OPV rule update.}
+\item{HPV_DATE}{2016-04-01, HPV schedule update.}
+\item{PCV_DATE}{2010-02-24, PCV13 release.}
 }
 }
 \usage{

@@ -89,6 +89,7 @@ evaluate_visits<-function(visit_data
                           ,years = NULL
                           ,verbose=TRUE
                           ){
+  return_mode <- match.arg(return_mode)
   # confirm the antigen data is validated
   check_antigen_table(antigens)
   #confirm uppercase

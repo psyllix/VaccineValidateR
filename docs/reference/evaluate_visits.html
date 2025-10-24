@@ -9,7 +9,7 @@ was given, and if not, whether it was delayed, at the antigen level."></head><bo
 
     <a class="navbar-brand me-2" href="../index.html">VaccineValidateR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,11 +46,12 @@ was given, and if not, whether it was delayed, at the antigen level.</p>
 <span>  <span class="va">visit_data</span>,</span>
 <span>  <span class="va">antigens</span>,</span>
 <span>  patients <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  full_return <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  return_mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"POSSIBLE"</span>, <span class="st">"FULL"</span>, <span class="st">"DUE"</span><span class="op">)</span>,</span>
 <span>  antigen_to_eval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ALL"</span><span class="op">)</span>,</span>
 <span>  study_id_column_name <span class="op">=</span> <span class="st">"STUDY_ID"</span>,</span>
 <span>  date_of_birth_column_name <span class="op">=</span> <span class="st">"DOB"</span>,</span>
 <span>  visit_date_column_name <span class="op">=</span> <span class="st">"VISIT_DATE"</span>,</span>
+<span>  years <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -75,10 +76,16 @@ and series/delay fields (see <code>ANTIGEN_RETURN_COLUMNS</code>).</p></dd>
 Required if DOB is not present in <code>visit_data</code>.</p></dd>
 
 
-<dt id="arg-full-return">full_return<a class="anchor" aria-label="anchor" href="#arg-full-return"></a></dt>
-<dd><p>Logical. Default is <code>FALSE</code>. If <code>TRUE</code>, returns all visit–antigen combinations.
-If <code>FALSE</code>, excludes rows where the patient has aged out, the series was completed previously,
-or the visit occurred before the earliest allowable dose date.</p></dd>
+<dt id="arg-return-mode">return_mode<a class="anchor" aria-label="anchor" href="#arg-return-mode"></a></dt>
+<dd><p>Character; controls which visit–antigen rows are returned.
+Must be one of:</p><ul><li><p><code>"FULL"</code> — return <em>all</em> evaluated visit–antigen combinations,
+including those where the patient was too young, aged out, or the series was completed.</p></li>
+<li><p><code>"POSSIBLE"</code> — return only visit–antigen combinations that were
+at least theoretically possible (after minimum age and interval),
+but exclude those where the antigen was no longer recommended or series already complete.</p></li>
+<li><p><code>"DUE"</code> — return only visit–antigen combinations where the immunization
+would be recommended at that visit.</p></li>
+</ul><p>Default is <code>"POSSIBLE"</code>.</p></dd>
 
 
 <dt id="arg-antigen-to-eval">antigen_to_eval<a class="anchor" aria-label="anchor" href="#arg-antigen-to-eval"></a></dt>
@@ -98,6 +105,10 @@ Default is <code>"DOB"</code>.</p></dd>
 <dt id="arg-visit-date-column-name">visit_date_column_name<a class="anchor" aria-label="anchor" href="#arg-visit-date-column-name"></a></dt>
 <dd><p>Name of the column in <code>visit_data</code> for visit dates.
 Default is <code>"VISIT_DATE"</code>.</p></dd>
+
+
+<dt id="arg-years">years<a class="anchor" aria-label="anchor" href="#arg-years"></a></dt>
+<dd><p>A numeric vector of evaluation years to include test.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
@@ -136,7 +147,7 @@ for large cohorts.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-datatable.com" class="external-link">data.table</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Minimal toy data</span></span></span>
-<span class="r-in"><span><span class="va">visits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span><span class="va">visits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdatatable.gitlab.io/data.table/reference/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  STUDY_ID <span class="op">=</span> <span class="fl">1</span>,</span></span>
 <span class="r-in"><span>  VISIT_DATE <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2025-01-01"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  DOB <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-01-01"</span><span class="op">)</span></span></span>
@@ -145,286 +156,11 @@ for large cohorts.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Evaluate visits (full return = FALSE trims unnecessary rows)</span></span></span>
 <span class="r-in"><span><span class="fu">evaluate_visits</span><span class="op">(</span><span class="va">visits</span>, <span class="va">antigens</span>, patients <span class="op">=</span> <span class="cn">NULL</span>, full_return <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Starting evaluation process for visits. Validating inputs.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> validate_immunizations check complete - formatting data. This may take a while...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Processed 7 groups out of 15. 47% done. Time elapsed: 3s. ETA: 4s.Processed 11 groups out of 15. 73% done. Time elapsed: 6s. ETA: 2s.Processed 13 groups out of 15. 87% done. Time elapsed: 7s. ETA: 1s.Processed 15 groups out of 15. 100% done. Time elapsed: 7s. ETA: 0s.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Data formatting completed, moving onto visit-antigen validate_immunizations.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for POLIO vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for HIB vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for PCV vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for HEPA vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for HEPB vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for HPV vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for MCV vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for MENB vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for TETANUS vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for ROTA vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for COVID vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for RSV vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for MMR vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for VZV vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for INFLUENZA vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluation completed for all visits. Preparing return object as visit-antigen relation table.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> See ?VISIT_RETURN_DEFS for explanations of return columns.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     STUDY_ID VISIT_DATE ANTIGEN IS_VIRAL_SEASON        DOB AGED_OUT</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        &lt;int&gt;     &lt;Date&gt;  &lt;char&gt;          &lt;lgcl&gt;     &lt;Date&gt;   &lt;lgcl&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:        1 2025-01-01   POLIO            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:        1 2025-01-01     HIB            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:        1 2025-01-01     PCV            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:        1 2025-01-01    HEPA            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:        1 2025-01-01    HEPB            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:        1 2025-01-01 TETANUS            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:        1 2025-01-01   COVID            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:        1 2025-01-01     RSV            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:        1 2025-01-01     MMR            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:        1 2025-01-01     VZV            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     COMPLETED_PREVIOUSLY NEXT_DOSE_MIN NEXT_DOSE_RECOMMENDED    DUE  GIVEN</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                   &lt;lgcl&gt;        &lt;Date&gt;                &lt;Date&gt; &lt;lgcl&gt; &lt;lgcl&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:                FALSE    2024-02-12            2024-02-26   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:                FALSE    2024-02-12            2024-02-26   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:                FALSE    2024-02-12            2024-02-26   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:                FALSE    2024-12-31            2024-12-31   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:                FALSE    2024-01-01            2024-01-01   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:                FALSE    2024-02-12            2024-02-26   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:                FALSE    2024-12-31            2024-07-01   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:                FALSE    2024-01-01            2024-01-01   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:                FALSE    2024-12-31            2024-12-31   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:                FALSE    2024-12-31            2024-12-31   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     MISSED DELAYED_PRIOR_DOSE DELAYED_VISIT_DOSE DELAYED_NEXT_DOSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;lgcl&gt;             &lt;lgcl&gt;             &lt;lgcl&gt;            &lt;lgcl&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     NEXT_GIVEN_DATE NEXT_RCVD_15_DAYS NEXT_RCVD_30_DAYS NEXT_RCVD_90_DAYS</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              &lt;Date&gt;            &lt;lgcl&gt;            &lt;lgcl&gt;            &lt;lgcl&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     VISIT_MONTH   TOMORROW  YESTERDAY</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           &lt;num&gt;     &lt;Date&gt;     &lt;Date&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:           1 2025-01-02 2024-12-31</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in evaluate_visits(visits, antigens, patients = NULL, full_return = FALSE):</span> unused argument (full_return = FALSE)</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Keep all possible visit–antigen pairs</span></span></span>
 <span class="r-in"><span><span class="fu">evaluate_visits</span><span class="op">(</span><span class="va">visits</span>, <span class="va">antigens</span>, patients <span class="op">=</span> <span class="cn">NULL</span>, full_return <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Starting evaluation process for visits. Validating inputs.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> validate_immunizations check complete - formatting data. This may take a while...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Processed 7 groups out of 15. 47% done. Time elapsed: 4s. ETA: 4s.Processed 9 groups out of 15. 60% done. Time elapsed: 5s. ETA: 3s.Processed 11 groups out of 15. 73% done. Time elapsed: 8s. ETA: 3s.Processed 15 groups out of 15. 100% done. Time elapsed: 9s. ETA: 0s.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Data formatting completed, moving onto visit-antigen validate_immunizations.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for POLIO vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for HIB vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for PCV vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for HEPA vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for HEPB vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for HPV vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for MCV vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for MENB vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for TETANUS vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for ROTA vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for COVID vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for RSV vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for MMR vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for VZV vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating status of visits for INFLUENZA vaccination status.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Start with yesterday - calculate next date an immunization is due and previous dose information.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Determine if a dose was given at the day of the visit and if so, was it delayed.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> --Add in content from the next possible antigen given.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluation completed for all visits. Preparing return object as visit-antigen relation table.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> See ?VISIT_RETURN_DEFS for explanations of return columns.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     STUDY_ID VISIT_DATE   ANTIGEN IS_VIRAL_SEASON        DOB AGED_OUT</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        &lt;int&gt;     &lt;Date&gt;    &lt;char&gt;          &lt;lgcl&gt;     &lt;Date&gt;   &lt;lgcl&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:        1 2025-01-01     POLIO            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:        1 2025-01-01       HIB            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:        1 2025-01-01       PCV            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:        1 2025-01-01      HEPA            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:        1 2025-01-01      HEPB            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:        1 2025-01-01       HPV            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:        1 2025-01-01       MCV            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:        1 2025-01-01      MENB            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:        1 2025-01-01   TETANUS            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:        1 2025-01-01      ROTA            TRUE 2024-01-01     TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:        1 2025-01-01     COVID            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12:        1 2025-01-01       RSV            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13:        1 2025-01-01       MMR            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14:        1 2025-01-01       VZV            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15:        1 2025-01-01 INFLUENZA            TRUE 2024-01-01    FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     COMPLETED_PREVIOUSLY NEXT_DOSE_MIN NEXT_DOSE_RECOMMENDED    DUE  GIVEN</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                   &lt;lgcl&gt;        &lt;Date&gt;                &lt;Date&gt; &lt;lgcl&gt; &lt;lgcl&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:                FALSE    2024-02-12            2024-02-26   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:                FALSE    2024-02-12            2024-02-26   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:                FALSE    2024-02-12            2024-02-26   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:                FALSE    2024-12-31            2024-12-31   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:                FALSE    2024-01-01            2024-01-01   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:                FALSE    2032-12-31            2032-12-31  FALSE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:                FALSE    2033-12-31            2034-12-31  FALSE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:                FALSE    2040-01-01            2040-01-01  FALSE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:                FALSE    2024-02-12            2024-02-26   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:                FALSE    2024-02-12            2024-02-26  FALSE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:                FALSE    2024-12-31            2024-07-01   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12:                FALSE    2024-01-01            2024-01-01   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13:                FALSE    2024-12-31            2024-12-31   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14:                FALSE    2024-12-31            2024-12-31   TRUE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15:                FALSE    2025-09-01            2025-09-01  FALSE  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     MISSED DELAYED_PRIOR_DOSE DELAYED_VISIT_DOSE DELAYED_NEXT_DOSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;lgcl&gt;             &lt;lgcl&gt;             &lt;lgcl&gt;            &lt;lgcl&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:  FALSE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:  FALSE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  FALSE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:  FALSE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14:   TRUE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15:  FALSE                 NA                 NA                NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     NEXT_GIVEN_DATE NEXT_RCVD_15_DAYS NEXT_RCVD_30_DAYS NEXT_RCVD_90_DAYS</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              &lt;Date&gt;            &lt;lgcl&gt;            &lt;lgcl&gt;            &lt;lgcl&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15:            &lt;NA&gt;             FALSE             FALSE             FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     VISIT_MONTH   TOMORROW  YESTERDAY</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           &lt;num&gt;     &lt;Date&gt;     &lt;Date&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14:           1 2025-01-02 2024-12-31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15:           1 2025-01-02 2024-12-31</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in evaluate_visits(visits, antigens, patients = NULL, full_return = TRUE):</span> unused argument (full_return = TRUE)</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
@@ -433,7 +169,7 @@ for large cohorts.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Jeremy J Michel.</p>
+  <p>Developed by Jeremy J. Michel.</p>
 </div>
 
 <div class="pkgdown-footer-right">

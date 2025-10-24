@@ -25,15 +25,15 @@ create_cohort(
 }
 \value{
 A \code{data.table} with one row per patient, including:
-  \itemize{
-    \item \code{DOB}: earliest date of birth (as Date)
-    \item \code{AGE_DAYS}: age in days at \code{reference_date}
-    \item \code{AGE_YEARS}: age in years (decimal, using YEAR_LENGTH)
-  }
+\itemize{
+\item \code{DOB}: earliest date of birth (as Date)
+\item \code{AGE_DAYS}: age in days at \code{reference_date}
+\item \code{AGE_YEARS}: age in years (decimal, using YEAR_LENGTH)
+}
 }
 \description{
-This function generates a cohort list from a dataset containing patient identifiers and 
-dates of birth. It validates required columns, optionally renames them, ensures date consistency, 
+This function generates a cohort list from a dataset containing patient identifiers and
+dates of birth. It validates required columns, optionally renames them, ensures date consistency,
 and calculates age in both days and years.
 }
 \examples{

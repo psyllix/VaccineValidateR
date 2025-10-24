@@ -13,8 +13,8 @@ and \code{CVX}.}
 }
 \value{
 A named list of CVX code vectors (cvx), each corresponding to an antigen
-  or grouped antigen set (e.g., \code{HIB}, \code{POLIO}, \code{COVID},
-  \code{LIVE_NON_ENTERAL}).
+or grouped antigen set (e.g., \code{HIB}, \code{POLIO}, \code{COVID},
+\code{LIVE_NON_ENTERAL}).
 }
 \description{
 Utility function to create a structured list of CVX code groups
@@ -23,25 +23,25 @@ at package load to populate the global constant \code{\link{CVX}}.
 }
 \details{
 Most users will not need to call this directly. To refresh the
-global mapping (e.g., with a custom LIM→CVX file), use
+global mapping (e.g., with a custom LIM to CVX file), use
 \code{\link{update_cvx_map}} instead.
 
-
-The mapping combines reference CVX–antigen definitions bundled in 
-\code{extdata/} with an optional local LIM→CVX mapping provided by
+The mapping combines reference CVX-antigen definitions bundled in
+\code{extdata/} with an optional local LIM to CVX mapping provided by
 the user. The result is assigned to \code{\link{CVX}} when the package
 loads, making the mapping available globally.
 }
 \examples{
-# Normally not needed, CVX is available after library load:
-CVX$HIB
+# Normally not needed, CVX is available after library load: CVX$HIB
 
 # Rebuild manually (not usually recommended)
 custom_map <- build_cvx_map()
 custom_map$POLIO
 
 # Supported way to refresh the global mapping
+\dontrun{
 update_cvx_map()
+}
 
 }
 \seealso{

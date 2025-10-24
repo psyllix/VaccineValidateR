@@ -11,7 +11,7 @@ at package load to populate the global constant CVX."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">VaccineValidateR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,17 +61,16 @@ and <code>CVX</code>.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A named list of CVX code vectors (cvx), each corresponding to an antigen
-  or grouped antigen set (e.g., <code>HIB</code>, <code>POLIO</code>, <code>COVID</code>,
-  <code>LIVE_NON_ENTERAL</code>).</p>
+or grouped antigen set (e.g., <code>HIB</code>, <code>POLIO</code>, <code>COVID</code>,
+<code>LIVE_NON_ENTERAL</code>).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Most users will not need to call this directly. To refresh the
-global mapping (e.g., with a custom LIM→CVX file), use
+global mapping (e.g., with a custom LIM to CVX file), use
 <code><a href="update_cvx_map.html">update_cvx_map</a></code> instead.</p>
-
-<p>The mapping combines reference CVX–antigen definitions bundled in
-<code>extdata/</code> with an optional local LIM→CVX mapping provided by
+<p>The mapping combines reference CVX-antigen definitions bundled in
+<code>extdata/</code> with an optional local LIM to CVX mapping provided by
 the user. The result is assigned to <code>CVX</code> when the package
 loads, making the mapping available globally.</p>
     </div>
@@ -103,7 +102,7 @@ loads, making the mapping available globally.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Jeremy J Michel.</p>
+  <p>Developed by Jeremy J. Michel.</p>
 </div>
 
 <div class="pkgdown-footer-right">

@@ -5,9 +5,9 @@
 \alias{cvx}
 \title{CVX Mapping}
 \format{
-A named list of integer vectors. Each element corresponds 
-  to an antigen or grouped set of antigens (e.g., \code{HIB}, 
-  \code{PCV}, \code{PPV23}, \code{LIVE_NON_ENTERAL}).
+A named list of integer vectors. Each element corresponds
+to an antigen or grouped set of antigens (e.g., \code{HIB},
+\code{PCV}, \code{PPV23}, \code{LIVE_NON_ENTERAL}).
 }
 \usage{
 CVX
@@ -16,13 +16,12 @@ CVX
 A named list of CVX codes grouped by antigen.
 }
 \details{
-This object is built automatically at package load by \code{.onLoad()} 
-using \code{\link{build_cvx_map}} and provides convenient access to 
+This object is built automatically at package load by \code{.onLoad()}
+using \code{\link{build_cvx_map}} and provides convenient access to
 antigen-specific CVX code sets (e.g., \code{CVX$HIB}, \code{CVX$POLIO}).
 
-
-The mapping combines reference CVX–antigen definitions bundled in 
-\code{extdata/} with optional local LIM→CVX mapping if provided by 
+The mapping combines reference CVX–antigen definitions bundled in
+\code{extdata/} with optional local LIM→CVX mapping if provided by
 the user at build time.
 }
 \examples{

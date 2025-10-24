@@ -7,21 +7,29 @@
 <url><loc>https://psyllix.github.io/VaccineValidateR/index.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/LICENSE-text.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/ANTIGEN_RETURN_DEFS.html</loc></url>
+<url><loc>https://psyllix.github.io/VaccineValidateR/reference/apply_dob.html</loc></url>
+<url><loc>https://psyllix.github.io/VaccineValidateR/reference/build_antigen_list.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/build_cvx_map.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/check_antigen_table.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/create_cohort.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/cvx.html</loc></url>
+<url><loc>https://psyllix.github.io/VaccineValidateR/reference/evaluate_population.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/evaluate_visits.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/index.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/INVALID_DOSE_COLUMNS.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/max0.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/max_na.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/min_na.html</loc></url>
+<url><loc>https://psyllix.github.io/VaccineValidateR/reference/month_from_date.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/mon_with_grace.html</loc></url>
+<url><loc>https://psyllix.github.io/VaccineValidateR/reference/next_sept1.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/population_metrics.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/RSV_DATE.html</loc></url>
+<url><loc>https://psyllix.github.io/VaccineValidateR/reference/SEASONAL_ANTIGENS.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/select_immunizations.html</loc></url>
+<url><loc>https://psyllix.github.io/VaccineValidateR/reference/summarize_population.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/summarize_population_metrics.html</loc></url>
+<url><loc>https://psyllix.github.io/VaccineValidateR/reference/summarize_visits.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/summarize_visit_evaluations.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/supported_antigens.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/SYSTEM_ANTIGENS.html</loc></url>
@@ -31,6 +39,7 @@
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/VISIT_RETURN_DEFS.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/wk_no_grace.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/wk_with_grace.html</loc></url>
+<url><loc>https://psyllix.github.io/VaccineValidateR/reference/year_from_date.html</loc></url>
 <url><loc>https://psyllix.github.io/VaccineValidateR/reference/yr_with_grace.html</loc></url>
 </urlset>
 

@@ -12,7 +12,7 @@ typically from \code{validation()}.}
 }
 \value{
 Invisibly returns \code{TRUE} if validation passes.
-  Otherwise, throws an error with a list of missing columns.
+Otherwise, throws an error with a list of missing columns.
 }
 \description{
 Internal utility to confirm that a provided antigen-level \code{data.table}
@@ -24,8 +24,6 @@ column, and includes all required fields from
 \code{\link{ANTIGEN_RETURN_COLUMNS}}.
 }
 \examples{
-\dontrun{
 check_antigen_table(antigens)
-}
 }
 \keyword{internal}

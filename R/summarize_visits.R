@@ -46,17 +46,17 @@
 #'
 #' @examples
 #' # Summarize all antigens by year and antigen
-#' summarize_visit_evaluations(visit_output)
+#' summarize_visits(visit_output)
 #'
 #' # Summarize by system, site, and viral season
-#' summarize_visit_evaluations(visit_output,
+#' summarize_visits(visit_output,
 #'   time_slice = "VIRAL",
 #'   group_cols = c("SYSTEM","SITE"),
 #'   output_format = "wide",
 #'   percent_var = "PCT_MISSED_IF_DUE")
 #'
 #' @export
-summarize_visit_evaluations <- function(visit_output,
+summarize_visits <- function(visit_output,
                                         antigens_of_interest = NULL,
                                         time_slice = c("NONE", "YEAR", "MONTH","BIMONTH","QUARTER","FOURMONTH","VIRAL"),
                                         group_cols = NULL,

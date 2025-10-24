@@ -6,7 +6,7 @@
 \title{Visit-level column definitions}
 \format{
 A named character vector where names correspond to column names
-  and values are descriptions.
+and values are descriptions.
 }
 \usage{
 VISIT_RETURN_DEFS

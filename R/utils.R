@@ -89,7 +89,7 @@ supported_antigens<-function(){
 #' at package load to populate the global constant \code{\link{CVX}}.
 #' 
 #' Most users will not need to call this directly. To refresh the
-#' global mapping (e.g., with a custom LIM→CVX file), use
+#' global mapping (e.g., with a custom LIM to CVX file), use
 #' \code{\link{update_cvx_map}} instead.
 #'
 #' @param lim_cvx_map Optional \code{data.table} containing local immunization
@@ -101,21 +101,22 @@ supported_antigens<-function(){
 #'   \code{LIVE_NON_ENTERAL}).
 #'
 #' @details
-#' The mapping combines reference CVX–antigen definitions bundled in 
-#' \code{extdata/} with an optional local LIM→CVX mapping provided by
+#' The mapping combines reference CVX-antigen definitions bundled in 
+#' \code{extdata/} with an optional local LIM to CVX mapping provided by
 #' the user. The result is assigned to \code{\link{CVX}} when the package
 #' loads, making the mapping available globally.
 #'
 #' @examples
-#' # Normally not needed, CVX is available after library load:
-#' CVX$HIB
+#' # Normally not needed, CVX is available after library load: CVX$HIB
 #'
 #' # Rebuild manually (not usually recommended)
 #' custom_map <- build_cvx_map()
 #' custom_map$POLIO
 #'
 #' # Supported way to refresh the global mapping
+#' \dontrun{
 #' update_cvx_map()
+#' }
 #'
 #' @seealso \code{\link{cvx}}, \code{\link{update_cvx_map}}, \code{\link{supported_antigens}}
 #' @export
@@ -125,7 +126,7 @@ build_cvx_map <- function(lim_cvx_map = NULL) {
                           full.names = TRUE)
   cvx_map <- data.table::rbindlist(lapply(cvx_files, data.table::fread))
   
-  # merge with user-provided LIM→CVX map if present
+  # merge with user-provided LIM to CVX map if present
   if (!is.null(lim_cvx_map)) {
     cvx_map <- data.table::rbindlist(list(cvx_map, lim_cvx_map),
                                      fill = TRUE, use.names = TRUE)
@@ -185,7 +186,7 @@ build_cvx_map <- function(lim_cvx_map = NULL) {
 #' Update the CVX Mapping
 #'
 #' Rebuilds the global \code{\link{CVX}} constant with an optional
-#' local LIM→CVX map. This updates the copy inside the package
+#' local LIM to CVX map. This updates the copy inside the package
 #' namespace so that all downstream functions will see the new
 #' mapping.
 #'
@@ -198,7 +199,7 @@ build_cvx_map <- function(lim_cvx_map = NULL) {
 #' # Refresh CVX mapping with default references
 #' update_cvx_map()
 #'
-#' # Refresh with custom local LIM→CVX mapping
+#' # Refresh with custom local LIM to CVX mapping
 #' my_map <- data.table::data.table(LIM = "X123", PRODUCT = "Test", CVX = 999)
 #' update_cvx_map(my_map)
 #'
@@ -230,9 +231,7 @@ update_cvx_map <- function(lim_cvx_map = NULL) {
 #'
 #' @keywords internal
 #' @examples
-#' \dontrun{
 #' check_antigen_table(antigens)
-#' }
 check_antigen_table <- function(antigens) {
   if (!"data.table" %in% class(antigens) || !"VALID" %in% names(antigens)) {
     stop("Antigen data has not been validated (missing VALID column).")
@@ -275,9 +274,9 @@ build_antigen_list <- function(antigen_to_eval = c("ALL"), verbose = TRUE) {
   # message
   if (verbose) {
     if (length(antigens_list) == 0L) {
-      message("No matching antigens requested — empty set will be returned.")
+      message("No matching antigens requested - empty set will be returned.")
     } else {
-      message("Antigen list developed — will evaluate for: ",
+      message("Antigen list developed - will evaluate for: ",
               paste(antigens_list, collapse = ", "))
     }
   }
@@ -328,12 +327,12 @@ year_from_date <- function(d) {
 
 #' Extract Calendar Month from Date
 #'
-#' Internal helper to return the calendar month (1–12) as an integer from a
+#' Internal helper to return the calendar month (1-12) as an integer from a
 #' \code{Date} vector.
 #' 
 #' @param d A vector of class \code{Date}.
 #'
-#' @return An integer vector of calendar months (1–12).
+#' @return An integer vector of calendar months (1-12).
 #'
 #' @examples
 #' VaccineValidateR:::month_from_date(as.Date(c("2000-01-01", "2025-09-18")))
@@ -367,16 +366,16 @@ make_a_date <- function(DT, col) {
 #' @details
 #' Cases handled:
 #' \enumerate{
-#'   \item If \code{primary_dt} already has DOB as Date → trusted and renamed to "DOB" if needed.
-#'   \item Else, if \code{patients} supplied → DOB merged in by STUDY_ID, coerced to Date if needed.
-#'   \item Else → attempt to derive DOB directly from \code{primary_dt}, coercing if needed.
+#'   \item If \code{primary_dt} already has DOB as Date:  trust and renamed to "DOB" if needed.
+#'   \item Else, if \code{patients} supplied: DOB merged in by STUDY_ID, coerced to Date if needed.
+#'   \item Else:  attempt to derive DOB directly from \code{primary_dt}, coercing if needed.
 #' }
 #'
 #' @examples
 #' library(data.table)
 #' visits <- data.table(STUDY_ID = 1, VISIT_DATE = Sys.Date())
 #' pats   <- data.table(STUDY_ID = 1, DOB = as.Date("2020-01-01"))
-#' add_patient_dob(visits, pats)
+#' apply_dob(visits, pats)
 #'
 #' @export
 apply_dob <- function(primary_dt,

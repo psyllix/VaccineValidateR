@@ -6,7 +6,7 @@
 #' year (e.g., age 2 for CIS, age 13 for ADOL).
 #'
 #' @param patients A \code{data.table} of patient-level records that has already
-#'   been processed by \code{population_metrics()} (contains metric columns and
+#'   been processed by \code{evaluate_population()} (contains metric columns and
 #'   attached attribute \code{population_metric_definitions}).
 #' @param visits A \code{data.table} of patient visits including at least
 #'   \code{STUDY_ID} and \code{VISIT_DATE}.
@@ -39,7 +39,7 @@
 #'   \item All others → evaluated at age 18 (Default/young adult)
 #' }
 #' @export
-summarize_population_metrics <- function(patients, 
+summarize_population <- function(patients, 
                                          visits, 
                                          years = NULL, 
                                          metrics = NULL,
@@ -90,7 +90,7 @@ summarize_population_metrics <- function(patients,
   patients[, BIRTH_YEAR := data.table::fifelse(!is.na(get(dob_col)),
                                                data.table::year(get(dob_col)), NA_integer_)]
   if (verbose) message("Established birth year")
-  if (missing(years) || is.null(years)) {
+  if (is.null(years)) {
     years <- sort(unique(patients$BIRTH_YEAR + c(2, 13)))
     if (verbose) message("No years specified. Using all years patients in sample reach ages 2 and age 13.")
   }

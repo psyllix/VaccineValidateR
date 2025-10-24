@@ -9,7 +9,7 @@ outputs, including column names and human-readable definitions."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">VaccineValidateR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,14 +51,14 @@ outputs, including column names and human-readable definitions.</p>
 <dl><dt>ANTIGEN_RETURN_COLUMNS</dt>
 <dd><p>Character vector of all required column names.</p></dd>
 
-  <dt>ANTIGEN_RETURN_DEFS</dt>
+<dt>ANTIGEN_RETURN_DEFS</dt>
 <dd><p>Named character vector mapping each column to a
-        short description of its meaning.</p></dd>
+short description of its meaning.</p></dd>
 
 
 </dl><p>These constants are used internally for validation, consistency checks, and
 population-level metric calculations.</p>
-<table class="table table"><tr><td><strong>Column</strong></td><td><strong>Definition</strong></td></tr><tr><td>STUDY_ID</td><td>Unique patient identifier</td></tr><tr><td>PRODUCT</td><td>Immunization product name</td></tr><tr><td>CVX</td><td>CVX vaccine code</td></tr><tr><td>ANTIGEN</td><td>Standardized antigen grouping</td></tr><tr><td>TABLE_INDEX</td><td>Row index from original processing table</td></tr><tr><td>GIVEN_STATUS</td><td>1 if given, 0 if not</td></tr><tr><td>ADMIN_LOCATION</td><td>Location where vaccine was administered</td></tr><tr><td>DATE_GIVEN</td><td>Date the immunization was given</td></tr><tr><td>AGE_IMM_GIVEN</td><td>Age in days at immunization</td></tr><tr><td>ABS_ADMIN_COUNTER</td><td>Absolute order of doses for the patient</td></tr><tr><td>ADMIN_COUNTER</td><td>Relative order within product grouping</td></tr><tr><td>DOSE_COUNTER</td><td>Relative order within antigen grouping</td></tr><tr><td>INTERVAL</td><td>Interval from prior dose (days)</td></tr><tr><td>LIVE_INTERVAL</td><td>Interval from prior live dose (days)</td></tr><tr><td>VALID</td><td>TRUE if dose met minimum interval/age rules</td></tr><tr><td>NEXT_DOSE_MIN</td><td>Earliest allowable date for next dose</td></tr><tr><td>NEXT_DOSE_RECOMMENDED</td><td>Recommended date for next dose</td></tr><tr><td>DOSE_COMPLETES_SERIES</td><td>TRUE if this dose completed the series</td></tr><tr><td>SERIES_COMPLETE</td><td>TRUE if antigen is complete at this point</td></tr><tr><td>DELAYED</td><td>TRUE if this dose was delayed</td></tr><tr><td>AGE_FIRST_DOSE</td><td>Age in days when first dose of series was given</td></tr></table><p>These constants are used internally for validation, consistency checks, and
+<table class="table table"><tr><td><strong>Column</strong></td><td><strong>Definition</strong></td></tr><tr><td>STUDY_ID</td><td>Unique patient identifier</td></tr><tr><td>PRODUCT</td><td>Immunization product name</td></tr><tr><td>CVX</td><td>CVX vaccine code</td></tr><tr><td>ANTIGEN</td><td>Standardized antigen grouping</td></tr><tr><td>TABLE_INDEX</td><td>Row index from original processing table</td></tr><tr><td>DATE_GIVEN</td><td>Date the immunization was given</td></tr><tr><td>AGE_IMM_GIVEN</td><td>Age in days at immunization</td></tr><tr><td>ABS_ADMIN_COUNTER</td><td>Absolute order of doses for the patient</td></tr><tr><td>ADMIN_COUNTER</td><td>Relative order within product grouping</td></tr><tr><td>DOSE_COUNTER</td><td>Relative order within antigen grouping</td></tr><tr><td>INTERVAL</td><td>Interval from prior dose (days)</td></tr><tr><td>LIVE_INTERVAL</td><td>Interval from prior live dose (days)</td></tr><tr><td>VALID</td><td>TRUE if dose met minimum interval/age rules</td></tr><tr><td>NEXT_DOSE_MIN</td><td>Earliest allowable date for next dose</td></tr><tr><td>NEXT_DOSE_RECOMMENDED</td><td>Recommended date for next dose</td></tr><tr><td>DOSE_COMPLETES_SERIES</td><td>TRUE if this dose completed the series</td></tr><tr><td>SERIES_COMPLETE</td><td>TRUE if antigen is complete at this point</td></tr><tr><td>DELAYED</td><td>TRUE if this dose was delayed</td></tr><tr><td>AGE_FIRST_DOSE</td><td>Age in days when first dose of series was given</td></tr></table><p>These constants are used internally for validation, consistency checks, and
 population-level metric calculations.</p>
     </div>
 
@@ -67,7 +67,7 @@ population-level metric calculations.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Jeremy J Michel.</p>
+  <p>Developed by Jeremy J. Michel.</p>
 </div>
 
 <div class="pkgdown-footer-right">

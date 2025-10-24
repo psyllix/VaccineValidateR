@@ -11,8 +11,8 @@
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Vaccine Validator for United States Childhood Immunization Schedules">
-<meta name="description" content="VaccineValidateR provides tools to clean, standardize, and validate childhood immunization data according to US ACIP recommendations and immunize.org guidance. The package allows mapping local immunization codes to CVX codes, selecting immunizations of interest, and filtering data for analysis. It supports evaluation of dose validity, series completion, and timing checks for routine and catch-up childhood vaccines, including COVID-19, Influenza, Tetanus, HIB, PCV, Polio, and other common antigens. The package facilitates reproducible and transparent vaccine data validation workflows for research and clinical quality improvement.">
-<meta property="og:description" content="VaccineValidateR provides tools to clean, standardize, and validate childhood immunization data according to US ACIP recommendations and immunize.org guidance. The package allows mapping local immunization codes to CVX codes, selecting immunizations of interest, and filtering data for analysis. It supports evaluation of dose validity, series completion, and timing checks for routine and catch-up childhood vaccines, including COVID-19, Influenza, Tetanus, HIB, PCV, Polio, and other common antigens. The package facilitates reproducible and transparent vaccine data validation workflows for research and clinical quality improvement.">
+<meta name="description" content="VaccineValidateR provides tools to clean, standardize, and validate childhood immunization data according to U.S. ACIP recommendations and Immunize.org guidance. It supports mapping of local immunization codes to CVX, validation of dose timing and series completion, and automated detection of invalid or out-of-sequence doses for routine and catch-up schedules (including COVID-19, Influenza, Tetanus, HIB, PCV, and Polio). The package facilitates reproducible vaccine validation workflows for research and clinical quality improvement.">
+<meta property="og:description" content="VaccineValidateR provides tools to clean, standardize, and validate childhood immunization data according to U.S. ACIP recommendations and Immunize.org guidance. It supports mapping of local immunization codes to CVX, validation of dose timing and series completion, and automated detection of invalid or out-of-sequence doses for routine and catch-up schedules (including COVID-19, Influenza, Tetanus, HIB, PCV, and Polio). The package facilitates reproducible vaccine validation workflows for research and clinical quality improvement.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">VaccineValidateR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,7 +65,7 @@ Use is limited to research, evaluation, and educational contexts.</p>
 </li>
 <li>Vaccination validation
 <ul>
-<li>Applies age and interval rules from most recent valid <a href="https://www.cdc.gov/vaccines/hcp/imz-schedules/index.html" class="external-link">ACIP</a>(updated 09/01/2025) guidance for each antigen/dose.</li>
+<li>Applies age and interval rules from most recent valid <a href="https://www.cdc.gov/vaccines/hcp/imz-schedules/index.html" class="external-link">ACIP</a> (updated 09/01/2025) guidance for each antigen/dose.</li>
 <li>Considers edge cases and situational handling as per guidance on <a href="https://www.immunize.org/" class="external-link">Immunize.org</a>
 </li>
 <li>Addresses numerous special cases (examples):
@@ -126,39 +126,65 @@ Use is limited to research, evaluation, and educational contexts.</p>
 </h2>
 <p>This package is not on CRAN.<br>
 You can install directly from GitHub using:</p>
-<p>```r # install.packages(“devtools”) devtools::install_github(“psyllix/VaccineValidateR”)</p>
-<div class="section level3">
-<h3 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
-</h3>
-<p>r</p>
-<p>library(VaccineValidateR)</p>
-<hr>
-</div>
-</div>
-</div>
-<div class="section level1">
-<h1 id="example-immunization-data">Example immunization data<a class="anchor" aria-label="anchor" href="#example-immunization-data"></a>
-</h1>
-<p>data &lt;- data.table::data.table( STUDY_ID = 1, CVX = c(“8”, “8”),#HEPATITIS B AGE_IMM_GIVEN = c(“0”,“31”), DATE_GIVEN = as.Date(c(“2022-01-01”, “2022-02-01”))#BIRTH AND 1 MONTH DOSE )</p>
-</div>
-<div class="section level1">
-<h1 id="validate">Validate<a class="anchor" aria-label="anchor" href="#validate"></a>
-</h1>
-<p>result &lt;- VaccineValidateR::validation(data)</p>
-</div>
-<div class="section level1">
-<h1 id="check-antigen-level-results">Check antigen-level results<a class="anchor" aria-label="anchor" href="#check-antigen-level-results"></a>
-</h1>
-<p>head(result$antigens)</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># install.packages("devtools")</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"psyllix/VaccineValidateR"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">### Example</span></span>
+<span><span class="va">r</span></span>
+<span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://psyllix.github.io/VaccineValidateR">VaccineValidateR</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="op">-</span><span class="op">-</span><span class="op">-</span></span>
+<span></span>
+<span><span class="co"># Example immunization data</span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdatatable.gitlab.io/data.table/reference/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span>
+<span>  STUDY_ID <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  CVX <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"8"</span>, <span class="st">"8"</span><span class="op">)</span>,<span class="co">#HEPATITIS B</span></span>
+<span>  AGE_IMM_GIVEN <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"0"</span>,<span class="st">"31"</span><span class="op">)</span>,</span>
+<span>  DATE_GIVEN <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2022-01-01"</span>, <span class="st">"2022-02-01"</span><span class="op">)</span><span class="op">)</span><span class="co">#BIRTH AND 1 MONTH DOSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Validate</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">VaccineValidateR</span><span class="fu">::</span><span class="fu">validation</span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Check antigen-level results</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">antigens</span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
 </h3>
-<p>This package is updated in response to changes in ACIP rules yearly (and sometimes more frequently). Bug/error fixes are released when notices. Validation rules are based on ACIP 2025 guidance, but may not yet cover every nuance. COVID vaccination status is not calculated for completion given the recent changes to yearly formulations.</p>
+<p>This package is updated in response to changes in ACIP rules yearly (and sometimes more frequently). Bug/error fixes are released when noticed. Validation rules are based on ACIP 2025 guidance, but may not yet cover every nuance. COVID vaccination status is not calculated for completion given the recent changes to yearly formulations. New features to be added as time permits. Ideas welcome.</p>
+</div>
+<div class="section level3">
+<h3 id="acknowledgements">Acknowledgements<a class="anchor" aria-label="anchor" href="#acknowledgements"></a>
+</h3>
+<p>The author wished to acknowledge colleages and early users for their feedback, guidance, and suggestions including Dr. Alex Fiks, Dr. Robert Grundmeier, Mary Kate Kelly, and Abbie Steiner.</p>
+</div>
 </div>
 <div class="section level2">
-<h2 id="id_-license">### License<a class="anchor" aria-label="anchor" href="#id_-license"></a>
+<h2 id="id_-non-commercial-research-license">### Non-Commercial Research License<a class="anchor" aria-label="anchor" href="#id_-non-commercial-research-license"></a>
 </h2>
-<p>This project is licensed under the <a href="https://www.gnu.org/licenses/gpl-3.0.html" class="external-link">GNU General Public License v3 (GPL-3)</a>. You are free to use, modify, and distribute this software, provided that derivative works are also licensed under GPL-3. See the GNU General Public License for details.</p>
+<p>This project is released under a Non-Commercial Research License. For commercial use, please contact <a href="mailto:michelj@chop.edu" class="email">michelj@chop.edu</a> for licensing terms. Copyright ©2025 The Children’s Hospital of Philadelphia. See full licenses statement for more details. Permission is hereby granted, free of charge, to any person or organization to use, copy, modify, and distribute this software and associated documentation files (the “Software”), for academic, research, or educational purposes only, subject to the following conditions:</p>
+<div class="section level4">
+<h4 id="attribution">Attribution<a class="anchor" aria-label="anchor" href="#attribution"></a>
+</h4>
+<p>Appropriate credit must be given to the authors in any use, publication, or derivative work of the Software.</p>
+</div>
+<div class="section level4">
+<h4 id="non-commercial-use-only">Non-Commercial Use Only<a class="anchor" aria-label="anchor" href="#non-commercial-use-only"></a>
+</h4>
+<p>The Software may not be used, in whole or in part, for commercial purposes, including but not limited to: - use in a product for sale, - use in a for-profit company’s operations, - use in services provided to customers for a fee.</p>
+</div>
+<div class="section level4">
+<h4 id="commercial-licensing">Commercial Licensing<a class="anchor" aria-label="anchor" href="#commercial-licensing"></a>
+</h4>
+<p>For commercial use, a separate license must be obtained from the copyright holder. Please contact: <a href="mailto:michelj@chop.edu">michelj@chop.edu</a></p>
+</div>
+<div class="section level4">
+<h4 id="warranty-disclaimer">Warranty Disclaimer<a class="anchor" aria-label="anchor" href="#warranty-disclaimer"></a>
+</h4>
+<p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="resources">Resources<a class="anchor" aria-label="anchor" href="#resources"></a>
@@ -171,11 +197,10 @@ You can install directly from GitHub using:</p>
 <div class="section level3">
 <h3 id="dose-calculation-tables-for-reference">Dose Calculation Tables (For Reference)<a class="anchor" aria-label="anchor" href="#dose-calculation-tables-for-reference"></a>
 </h3>
-<p>These tables summarize <strong>minimum ages, intervals, and series-completion rules</strong> for common antigens. Detailed dose timing and series completion tables are provided in the <a href="articles/dose_reference.html">dose reference vignette</a>.</p>
+<p>These tables summarize <strong>minimum ages, intervals, and series-completion rules</strong> for common antigens. Detailed dose timing and series completion tables are provided in the <a href="/docs/articles/dose_reference.html">dose reference vignette</a>.</p>
 </div>
 </div>
 </div>
-
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
@@ -187,7 +212,8 @@ You can install directly from GitHub using:</p>
 <div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li><a href="https://www.r-project.org/Licenses/GPL-3" class="external-link">GPL-3</a></li>
+<li>file <a href="LICENSE-text.html">LICENSE</a>
+</li>
 </ul>
 </div>
 
@@ -202,7 +228,7 @@ You can install directly from GitHub using:</p>
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Jeremy J Michel <br><small class="roles"> Maintainer </small>   </li>
+<li>Jeremy J. Michel <br><small class="roles"> Author, maintainer </small>   </li>
 </ul>
 </div>
 
@@ -213,7 +239,7 @@ You can install directly from GitHub using:</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Jeremy J Michel.</p>
+  <p>Developed by Jeremy J. Michel.</p>
 </div>
 
 <div class="pkgdown-footer-right">

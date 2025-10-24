@@ -8,11 +8,12 @@ evaluate_visits(
   visit_data,
   antigens,
   patients = NULL,
-  full_return = FALSE,
+  return_mode = c("POSSIBLE", "FULL", "DUE"),
   antigen_to_eval = c("ALL"),
   study_id_column_name = "STUDY_ID",
   date_of_birth_column_name = "DOB",
   visit_date_column_name = "VISIT_DATE",
+  years = NULL,
   verbose = TRUE
 )
 }
@@ -27,9 +28,18 @@ and series/delay fields (see \code{ANTIGEN_RETURN_COLUMNS}).}
 \item{patients}{A \code{data.table} of patient info, with at least \code{STUDY_ID} and \code{DOB}.
 Required if DOB is not present in \code{visit_data}.}
 
-\item{full_return}{Logical. Default is \code{FALSE}. If \code{TRUE}, returns all visit–antigen combinations.
-If \code{FALSE}, excludes rows where the patient has aged out, the series was completed previously,
-or the visit occurred before the earliest allowable dose date.}
+\item{return_mode}{Character; controls which visit–antigen rows are returned.
+Must be one of:
+\itemize{
+\item \code{"FULL"} — return \emph{all} evaluated visit–antigen combinations,
+including those where the patient was too young, aged out, or the series was completed.
+\item \code{"POSSIBLE"} — return only visit–antigen combinations that were
+at least theoretically possible (after minimum age and interval),
+but exclude those where the antigen was no longer recommended or series already complete.
+\item \code{"DUE"} — return only visit–antigen combinations where the immunization
+would be recommended at that visit.
+}
+Default is \code{"POSSIBLE"}.}
 
 \item{antigen_to_eval}{Character vector of antigens to evaluate. Default is \code{"ALL"}.}
 
@@ -42,14 +52,16 @@ Default is \code{"DOB"}.}
 \item{visit_date_column_name}{Name of the column in \code{visit_data} for visit dates.
 Default is \code{"VISIT_DATE"}.}
 
+\item{years}{A numeric vector of evaluation years to include test.}
+
 \item{verbose}{Logical. If \code{TRUE}, prints messages during processing. Default is \code{TRUE}.}
 }
 \value{
 A \code{data.table} containing:
-  \itemize{
-    \item All standardized columns in \code{VISIT_RETURN_COLUMNS}
-    \item All original columns from \code{visit_data}
-  }
+\itemize{
+\item All standardized columns in \code{VISIT_RETURN_COLUMNS}
+\item All original columns from \code{visit_data}
+}
 Temporary evaluation fields are excluded.
 }
 \description{
@@ -59,9 +71,9 @@ was given, and if not, whether it was delayed, at the antigen level.
 \details{
 When \code{full_return = FALSE}, the output excludes visits where:
 \itemize{
-  \item The patient has aged out for that antigen
-  \item The series was already completed before the visit
-  \item The visit occurred before the minimum allowable dose date
+\item The patient has aged out for that antigen
+\item The series was already completed before the visit
+\item The visit occurred before the minimum allowable dose date
 }
 This keeps only visit–antigen combinations that could meaningfully be evaluated.
 

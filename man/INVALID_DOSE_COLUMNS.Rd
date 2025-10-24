@@ -7,22 +7,20 @@
 \format{
 A character vector of column names:
 \describe{
-  \item{STUDY_ID}{Unique patient identifier}
-  \item{PRODUCT}{Immunization product name}
-  \item{CVX}{CVX vaccine code}
-  \item{ANTIGEN}{Standardized antigen grouping}
-  \item{TABLE_INDEX}{Row index from original processing table}
-  \item{GIVEN_STATUS}{1 if given, 0 if not}
-  \item{ADMIN_LOCATION}{Location where vaccine was administered}
-  \item{DATE_GIVEN}{Date the immunization was given}
-  \item{AGE_IMM_GIVEN}{Age in days at immunization}
-  \item{ABS_ADMIN_COUNTER}{Absolute order of doses for the patient}
-  \item{INTERVAL}{Interval from prior dose (days)}
-  \item{LIVE_INTERVAL}{Interval from prior live dose (days)}
-  \item{COUNTER}{Internal counter for validation cycles}
-  \item{CYCLE}{Cycle ID if dose was processed in multiple iterations}
-  \item{SERIES_COMPLETE}{TRUE if antigen series marked complete}
-  \item{NOTES}{Free-text notes on why the dose was flagged invalid}
+\item{STUDY_ID}{Unique patient identifier}
+\item{PRODUCT}{Immunization product name}
+\item{CVX}{CVX vaccine code}
+\item{ANTIGEN}{Standardized antigen grouping}
+\item{TABLE_INDEX}{Row index from original processing table}
+\item{DATE_GIVEN}{Date the immunization was given}
+\item{AGE_IMM_GIVEN}{Age in days at immunization}
+\item{ABS_ADMIN_COUNTER}{Absolute order of doses for the patient}
+\item{INTERVAL}{Interval from prior dose (days)}
+\item{LIVE_INTERVAL}{Interval from prior live dose (days)}
+\item{COUNTER}{Internal counter for validation cycles}
+\item{CYCLE}{Cycle ID if dose was processed in multiple iterations}
+\item{SERIES_COMPLETE}{TRUE if antigen series marked complete}
+\item{NOTES}{Free-text notes on why the dose was flagged invalid}
 }
 }
 \usage{
