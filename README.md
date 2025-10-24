@@ -14,7 +14,7 @@ Use is limited to research, evaluation, and educational contexts.
   - CVX codes updated to 09/01/2025
   - Handles some non-US immunization products without CVX codes
 - Vaccination validation
-  - Applies age and interval rules from most recent valid [ACIP](https://www.cdc.gov/vaccines/hcp/imz-schedules/index.html)(updated 09/01/2025) guidance for each antigen/dose.
+  - Applies age and interval rules from most recent valid [ACIP](https://www.cdc.gov/vaccines/hcp/imz-schedules/index.html) (updated 09/01/2025) guidance for each antigen/dose.
   - Considers edge cases and situational handling as per guidance on [Immunize.org](https://www.immunize.org/)
   - Addresses numerous special cases (examples):
     - Live vaccine minimum spacing across multiple series
@@ -74,15 +74,18 @@ head(result$antigens)
 ### Status
 
 This package is updated in response to changes in ACIP rules yearly (and sometimes more frequently).
-Bug/error fixes are released when notices.
+Bug/error fixes are released when noticed.
 Validation rules are based on ACIP 2025 guidance, but may not yet cover every nuance.
 COVID vaccination status is not calculated for completion given the recent changes to yearly formulations.
+New features to be added as time permits. Ideas welcome.
+
+### Acknowledgements
+The author wished to acknowledge colleages and early users for their feedback, guidance, and suggestions including Dr. Alex Fiks, Dr. Robert Grundmeier, Mary Kate Kelly, and Abbie Steiner.
 
 ### Non-Commercial Research License
 ---
-This project is released under a Non-Commercial Research License. For commercial use, please contact michelj@chop.edu for licensing terms.”
-
-Copyright ©2025 The Children's Hospital of Philadelphia.
+This project is released under a Non-Commercial Research License. For commercial use, please contact michelj@chop.edu for licensing terms.
+Copyright ©2025 The Children's Hospital of Philadelphia. See full licenses statement for more details.
 Permission is hereby granted, free of charge, to any person or organization to use, copy, modify, and distribute this software and associated documentation files (the “Software”), for academic, research, or educational purposes only, subject to the following conditions:
 
 #### Attribution
