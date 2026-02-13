@@ -455,7 +455,7 @@
       if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",Sys.time()))
     }
     #clean up for next dose
-    antigens_count[,SERIES_COMPLETE:=max(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
+    antigens_count[,SERIES_COMPLETE:=any(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
     #store skipped - series completed previously, no further dose evaluations needed
     skipped_group<-antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID)]
     if(nrow(skipped_group)> 0L){
@@ -469,19 +469,20 @@
     antigens_count<-antigens_count[VALID==TRUE|SERIES_COMPLETE==FALSE]#only keep future doses or ADMIN_1s that are correct
     #Post Processing
     antigens_count[VALID==TRUE,FIRST_DOSE_CVX:=CVX]
-    antigens_count[,AGE_FIRST_DOSE:=min(AGE_IMM_GIVEN,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
-    antigens_count[,FIRST_DOSE_CVX:=max(FIRST_DOSE_CVX,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply first dose CVX
-    #antigens_count[ANTIGEN=="PCV",PRIOR_PNEUMOCOCCAL:=max_na(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
-    antigens_count[ANTIGEN=="HIB",PRIOR_HIB4:=max_na(FIRST_DOSE_CVX %in% cvx$HIB4,na.rm = TRUE),by=.(STUDY_ID)]
-    antigens_count[ANTIGEN=="ROTA",PRIOR_ROTA2:=max_na(FIRST_DOSE_CVX %in% cvx$ROTA2,na.rm = TRUE),by=.(STUDY_ID)]
-    antigens_count[ANTIGEN=="MENB",PRIOR_BEXSERO:=max_na(FIRST_DOSE_CVX %in% cvx$BEXSERO,na.rm = TRUE),by=.(STUDY_ID)]
-    antigens_count[ANTIGEN=="MENB",PRIOR_TRUMENBA:=max_na(FIRST_DOSE_CVX %in% cvx$TRUMENBA,na.rm = TRUE),by=.(STUDY_ID)]
+    antigens_count[,AGE_FIRST_DOSE:=min(AGE_IMM_GIVEN,na.rm = TRUE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
+    antigens_count[,FIRST_DOSE_CVX:=max(FIRST_DOSE_CVX,na.rm = TRUE),by=.(STUDY_ID, ANTIGEN)]#apply first dose CVX
+    #antigens_count[ANTIGEN=="PCV",PRIOR_PNEUMOCOCCAL:=any(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
+    antigens_count[ANTIGEN=="HIB",PRIOR_HIB4:=any(FIRST_DOSE_CVX %in% cvx$HIB4,na.rm = TRUE),by=.(STUDY_ID)]
+    antigens_count[ANTIGEN=="ROTA",PRIOR_ROTA2:=any(FIRST_DOSE_CVX %in% cvx$ROTA2,na.rm = TRUE),by=.(STUDY_ID)]
+    antigens_count[ANTIGEN=="MENB",PRIOR_BEXSERO:=any(FIRST_DOSE_CVX %in% cvx$BEXSERO,na.rm = TRUE),by=.(STUDY_ID)]
+    antigens_count[ANTIGEN=="MENB",PRIOR_TRUMENBA:=any(FIRST_DOSE_CVX %in% cvx$TRUMENBA,na.rm = TRUE),by=.(STUDY_ID)]
     antigens_count[ANTIGEN=="HEPB"&AGE_IMM_GIVEN>=yr_with_grace(11),PREVIOUS_HEPB_BRAND_ADOL := FIRST_DOSE_CVX %in% cvx$ADOL_HEPB2]
     antigens_count[ANTIGEN=="HEPB"&AGE_IMM_GIVEN>=yr_with_grace(18),PREVIOUS_HEPB_BRAND_ADULT2DOSE := FIRST_DOSE_CVX %in% cvx$ADULT_HEPB]
     #report out
     if(verbose){message(paste0("Administrations validated dose ",counter,": ",antigens_count[VALID==TRUE&DOSE_COUNTER==counter,.N]))}
     
     if(verbose){message(paste0("Total administrations remaining: ",antigens_count[is.na(VALID),.N]))}
+    
     antigens_valid[[counter]]<-antigens_count[VALID==TRUE]
     antigens_count<-antigens_count[is.na(VALID)]
     if(verbose){message(paste0("Completed Dose ",counter," evaluation @ ",Sys.time()))}
@@ -596,7 +597,7 @@
       if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",Sys.time()))
     }
     #clean up and prep for next dose
-    antigens_count[,SERIES_COMPLETE:=max(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
+    antigens_count[,SERIES_COMPLETE:=any(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
     #store skipped - series completed previously, no further dose evaluations needed
     skipped_group<-antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID)]
     if(nrow(skipped_group)> 0L){
@@ -606,8 +607,8 @@
       if (verbose) message("Not evaluated since series already completed: ", nrow(skipped_group))
     }
     #Dose post-processing - HEP B, HIB and PCV care about second dose status
-    #antigens_count[ANTIGEN=="PCV"&ADMIN_COUNTER>=counter,PRIOR_PNEUMOCOCCAL:=max_na(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
-    antigens_count[ANTIGEN=="HEPB"&ADMIN_COUNTER>=counter,SECOND_HEPB:=max_na(HEPB_DOSE_2,na.rm = TRUE),by=.(STUDY_ID)]
+    #antigens_count[ANTIGEN=="PCV"&ADMIN_COUNTER>=counter,PRIOR_PNEUMOCOCCAL:=any(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
+    antigens_count[ANTIGEN=="HEPB"&ADMIN_COUNTER>=counter,SECOND_HEPB:=any(HEPB_DOSE_2,na.rm = TRUE),by=.(STUDY_ID)]
     antigens_count[ADMIN_COUNTER<=(counter+1)&ANTIGEN=="HIB",EXISTS_HIB4:=any(ifelse(is.na(IS_HIB4), F, IS_HIB4)),by=.(STUDY_ID)]#force HIB 4 calculations if dose 1/2/3 are HIB4
     #report out
     if(verbose){message(paste0("Administrations validated dose ",counter,": ",antigens_count[VALID==TRUE&DOSE_COUNTER==counter,.N]))}
@@ -694,7 +695,7 @@
       if(verbose)message(paste0("Dose ",counter," Cycle #",cycle," validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens ",antigens_count[is.na(VALID),.N]," remaining @",Sys.time()))
     }
     #clean up and prep for next dose
-    antigens_count[,SERIES_COMPLETE:=max(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
+    antigens_count[,SERIES_COMPLETE:=any(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
     #store skipped - series completed previously, no further dose evaluations needed
     skipped_group<-antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID)]
     if(nrow(skipped_group)> 0L){
@@ -704,7 +705,7 @@
       if (verbose) message("Not evaluated since series already completed: ", nrow(skipped_group))
     }
     #Dose post-processing
-    #antigens_count[ANTIGEN=="PCV"&ADMIN_COUNTER>=counter,PRIOR_PNEUMOCOCCAL:=max_na(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
+    #antigens_count[ANTIGEN=="PCV"&ADMIN_COUNTER>=counter,PRIOR_PNEUMOCOCCAL:=any(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
     #report out
     if(verbose){message(paste0("Administrations validated dose ",counter,": ",antigens_count[VALID==TRUE&DOSE_COUNTER==counter,.N]))}
     
@@ -764,7 +765,7 @@
       if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",Sys.time()))
     }
     #clean up and prep for next dose
-    antigens_count[,SERIES_COMPLETE:=max(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
+    antigens_count[,SERIES_COMPLETE:=any(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]#apply series completion to whole set
     #store skipped - series completed previously, no further dose evaluations needed
     skipped_group<-antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID)]
     if(nrow(skipped_group)> 0L){
@@ -774,7 +775,7 @@
       if (verbose) message("Not evaluated since series already completed: ", nrow(skipped_group))
     }
     #Dose post-processing
-    #antigens_count[ANTIGEN=="PCV"&ADMIN_COUNTER>=counter,PRIOR_PNEUMOCOCCAL:=max_na(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
+    #antigens_count[ANTIGEN=="PCV"&ADMIN_COUNTER>=counter,PRIOR_PNEUMOCOCCAL:=any(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
     #report out
     if(verbose){message(paste0("Administrations validated dose ",counter,": ",antigens_count[VALID==TRUE&DOSE_COUNTER==counter,.N]))}
     
@@ -822,7 +823,7 @@
       if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",Sys.time()))
     }
     #clean up and prep for next dose
-    antigens_count[,SERIES_COMPLETE:=max(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]
+    antigens_count[,SERIES_COMPLETE:=any(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]
     #store skipped - series completed previously, no further dose evaluations needed
     skipped_group<-antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID)]
     if(nrow(skipped_group)> 0L){
@@ -832,7 +833,7 @@
       if (verbose) message("Not evaluated since series already completed: ", nrow(skipped_group))
     }
     #Dose 5 post-processing
-    #antigens_count[ANTIGEN=="PCV"&ADMIN_COUNTER>=counter,PRIOR_PNEUMOCOCCAL:=max_na(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
+    #antigens_count[ANTIGEN=="PCV"&ADMIN_COUNTER>=counter,PRIOR_PNEUMOCOCCAL:=any(LAST_PNEUMOCOCCAL_CVX,na.rm = TRUE),by=.(STUDY_ID)]#handling of PPV23 and PCV
     #report out
     if(verbose){message(paste0("Administrations validated dose ",counter,": ",antigens_count[VALID==TRUE&DOSE_COUNTER==counter,.N]))}
     
@@ -871,7 +872,7 @@
       if(verbose)message(paste0("Dose: ",counter," Cycle: ",cycle,". Validated total of ",antigens_count[VALID&DOSE_COUNTER==counter,.N]," antigens for this dose. ",antigens_count[is.na(VALID),.N]," antigen adminisrations still to be tested (total) @",Sys.time()))
     }
     #clean up and prep for next dose
-    antigens_count[,SERIES_COMPLETE:=max(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]
+    antigens_count[,SERIES_COMPLETE:=any(DOSE_COMPLETES_SERIES,na.rm = FALSE),by=.(STUDY_ID, ANTIGEN)]
     #store skipped - series completed previously, no further dose evaluations needed
     skipped_group<-antigens_count[SERIES_COMPLETE==TRUE&DOSE_COUNTER==0&is.na(VALID)]
     if(nrow(skipped_group)> 0L){
