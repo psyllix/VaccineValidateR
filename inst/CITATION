@@ -2,7 +2,7 @@ citHeader("To cite VaccineValidateR in publications, please use:")
 
 citEntry(
   entry = "Manual",
-  title = "VaccineValidateR: An R package for validating pediatric immunizations and evaluating vaccination opportunities using ACIP-aligned logic",
+  title = "VaccineValidateR: An R package for validating pediatric immunizations and evaluating vaccination opportunities.",
   author = person("Jeremy J.", "Michel",
                   email = "michelj@chop.edu",
                   role = c("aut", "cre")),
@@ -12,7 +12,7 @@ citEntry(
   url = "https://github.com/psyllix/VaccineValidateR",
   textVersion = paste(
     "Michel JJ (2025). VaccineValidateR:",
-    "An R package for validating pediatric immunizations and evaluating vaccination opportunities using ACIP-aligned logic.",
+    "An R package for validating pediatric immunizations and evaluating vaccination opportunities.",
     "Children’s Hospital of Philadelphia.",
     "Version 1.0.0.0.",
     "Available at: https://github.com/psyllix/VaccineValidateR"
