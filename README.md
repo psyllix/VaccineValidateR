@@ -1,9 +1,9 @@
 # VaccineValidateR
 
-**VaccineValidateR** is an R package for testing vaccine histories against the ACIP immunization recommendations.
+**VaccineValidateR** is an R package for testing vaccine histories against the current AAP and historical ACIP immunization recommendations.
 It is designed for **research and data quality purposes** — not for clinical decision-making.  
 
-**Disclaimer:** This package is *not* an official ACIP/CDC tool and should not be used for clinical decision support.  
+**Disclaimer:** This package is *not* an official AAP or ACIP/CDC tool and should not be used for clinical decision support.  
 Use is limited to research, evaluation, and educational contexts.
 
 ---
@@ -14,7 +14,8 @@ Use is limited to research, evaluation, and educational contexts.
   - CVX codes updated to 09/01/2025
   - Handles some non-US immunization products without CVX codes
 - Vaccination validation
-  - Applies age and interval rules from most recent valid [ACIP](https://www.cdc.gov/vaccines/hcp/imz-schedules/index.html) (updated 09/01/2025) guidance for each antigen/dose.
+  - Applies age and interval rules from most recent valid [AAP] (https://downloads.aap.org/AAP/PDF/AAP-Immunization-Schedule.pdf) (updated 02/05/2026) guidance for each antigen/dose.
+  - Matches historical [ACIP](https://www.cdc.gov/vaccines/hcp/imz-schedules/index.html) (updated 09/01/2025) guidance for each antigen/dose. Ongoing development is planned to support future ACIP interval schedules once details on these are accurately published.
   - Considers edge cases and situational handling as per guidance on [Immunize.org](https://www.immunize.org/)
   - Addresses numerous special cases (examples):
     - Live vaccine minimum spacing across multiple series
@@ -24,7 +25,7 @@ Use is limited to research, evaluation, and educational contexts.
   - Provides three main outputs:
     - **immunizations** (product-level data mapping back content to input)
     - **antigens** (dose-level validated data)
-    - **skipped_antigens** (administrations that do not meet ACIP timing - some of these are interval doses that are ignored or doses given for travel or as part of non-US schedules)
+    - **skipped_antigens** (administrations that do not meet AAP or historical ACIP timing - some of these are interval doses that are ignored or doses given for travel or as part of non-US schedules)
 - Visit level evaluations
   - *Used after validation* 
   - Identifies missed opportunities and whether immunizations given at or after a visit were delayed
@@ -37,7 +38,7 @@ Use is limited to research, evaluation, and educational contexts.
   - Visit level
     - Aggregates visit-level results by antigen (counts, % missed, % caught up within X days), grouped by year, antigen, or custom grouping columns (e.g. SYSTEM/VISIT_TYPE).
 - Extensible
-  - Designed to support new ACIP changes, additional antigens, and site/network-level QI.
+  - Designed to support new immunization changes, additional antigens, and site/network-level QI.
   - Scales to large datasets (tested on >60M administrations)
 ---
 
@@ -97,9 +98,9 @@ visit_evaluations<-summarize_visit_evaluations(visit_output = visit_output
 ```
 ### Status
 
-This package is updated in response to changes in ACIP rules yearly (and sometimes more frequently).
+This package is updated in response to changes in rules yearly (and may be updated earlier in response to major changes).
 Bug/error fixes are released when noticed.
-Validation rules are based on ACIP 2025 guidance, but may not yet cover every nuance.
+Validation rules are based on ACIP 2025 guidance, but may not yet cover every nuance. Currently the rules match the AAP guidance.
 COVID vaccination status is not calculated for completion given the recent changes to yearly formulations.
 New features to be added as time permits. Ideas welcome.
 
@@ -107,7 +108,7 @@ New features to be added as time permits. Ideas welcome.
 The author wished to acknowledge colleages and early users for their feedback, guidance, and suggestions including Dr. Alex Fiks, Dr. Robert Grundmeier, Mary Kate Kelly, and Abbie Steiner.
 
 ### Citation:
-Michel JJ. VaccineValidateR: An R package for validating pediatric immunizations and evaluating vaccination opportunities using ACIP-aligned logic. The Children’s Hospital of Philadelphia, 2025. Available at: https://github.com/psyllix/VaccineValidateR
+Michel JJ. VaccineValidateR: An R package for validating pediatric immunizations and evaluating vaccination opportunities. The Children’s Hospital of Philadelphia, 2025. Available at: https://github.com/psyllix/VaccineValidateR
 
 ### Non-Commercial Research License
 ---
@@ -138,7 +139,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ## Resources
-
+- [AAP Immunization Schedule] (https://downloads.aap.org/AAP/PDF/AAP-Immunization-Schedule.pdf)
 - [ACIP Immunization Schedules (CDC)](https://www.cdc.gov/vaccines/hcp/imz-schedules/index.html)
 - [CDC CVX Code List](https://www.cdc.gov/vaccines/programs/iis/codes.html)
 - [devtools GitHub](https://github.com/r-lib/devtools)
