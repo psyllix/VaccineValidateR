@@ -51,7 +51,7 @@
 #' # Summarize by system, site, and viral season
 #' summarize_visits(visit_output,
 #'   time_slice = "VIRAL",
-#'   group_cols = c("SYSTEM","SITE"),
+#'   group_cols = c("SYSTEM","SITE","DOSE_COUNTER"),
 #'   output_format = "wide",
 #'   percent_var = "PCT_MISSED_IF_DUE")
 #'

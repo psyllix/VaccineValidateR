@@ -180,6 +180,7 @@ evaluate_visits<-function(visit_data
      ,JOIN_DATE
      ,DATE_GIVEN
      ,LAST_GIVEN=DATE_GIVEN
+     ,DOSE_COUNTER=DOSE_COUNTER
      ,DELAYED_LAST_DOSE=DELAYED
      ,NEXT_DOSE_MIN
      ,NEXT_DOSE_RECOMMENDED

@@ -205,7 +205,7 @@ INVALID_DOSE_DEFS <- c(
 #' @keywords internal
 VISIT_RETURN_COLUMNS <- c(
   'STUDY_ID','VISIT_ID','VISIT_DATE','ANTIGEN',
-  'IS_VIRAL_SEASON','DOB','AGED_OUT','COMPLETED_PREVIOUSLY',
+  'IS_VIRAL_SEASON','DOB','AGED_OUT','COMPLETED_PREVIOUSLY','DOSE_COUNTER',
   'NEXT_DOSE_MIN','NEXT_DOSE_RECOMMENDED','DUE','GIVEN','MISSED',
   'DELAYED_PRIOR_DOSE','DELAYED_VISIT_DOSE','DELAYED_NEXT_DOSE',
   'NEXT_GIVEN_DATE','NEXT_RCVD_15_DAYS','NEXT_RCVD_30_DAYS','NEXT_RCVD_90_DAYS'
@@ -227,6 +227,7 @@ VISIT_RETURN_DEFS <- c(
   DOB = "Date of birth of patient",
   AGED_OUT = "Flag if patient has exceeded eligible age for vaccine",
   COMPLETED_PREVIOUSLY = "TRUE if the series was completed before this visit",
+  DOSE_COUNTER = "Dose number in series",
   NEXT_DOSE_MIN = "Earliest allowable date for the next dose",
   NEXT_DOSE_RECOMMENDED = "Recommended date for the next dose",
   DUE = "TRUE if the vaccine dose is due at this visit",
