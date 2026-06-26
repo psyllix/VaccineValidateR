@@ -387,7 +387,7 @@
       #TETANUS- ignore Td vs. DT
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="TETANUS"&AGE_IMM_GIVEN>=wk_with_grace(6),`:=`(DOSE_COUNTER=counter,VALID=TRUE,NEXT_DOSE_MIN=(DATE_GIVEN+wk_no_grace(4)),NEXT_DOSE_RECOMMENDED=(DATE_GIVEN+wk_no_grace(8)),DELAYED=(AGE_IMM_GIVEN>mon_no_grace(4)))]
       #ROTA - while maximum age to start is 14 weeks 6 days. Still count if late as series should be continued
-      antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="ROTA"&AGE_IMM_GIVEN>=wk_with_grace(4)&AGE_IMM_GIVEN<mon_no_grace(8),`:=`(DOSE_COUNTER=counter,VALID=TRUE
+      antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="ROTA"&AGE_IMM_GIVEN>=wk_with_grace(6)&AGE_IMM_GIVEN<mon_no_grace(8),`:=`(DOSE_COUNTER=counter,VALID=TRUE
                                                                                                                                                   ,NEXT_DOSE_MIN=(DATE_GIVEN+wk_no_grace(4)),NEXT_DOSE_RECOMMENDED=(DATE_GIVEN+wk_no_grace(8)),DELAYED=(AGE_IMM_GIVEN>=wk_no_grace(15)))]
       #PCV: FINAL DOSE PCV after 2 YRS (not considering HR groups)
       antigens_count[is.na(VALID)==TRUE&ADMIN_COUNTER==counter&ANTIGEN=="PCV"&AGE_IMM_GIVEN>=yr_no_grace(2),`:=`(DOSE_COUNTER=counter,VALID=TRUE,LAST_PNEUMOCOCCAL_CVX=CVX,DOSE_COMPLETES_SERIES=TRUE,DELAYED=(AGE_IMM_GIVEN>mon_no_grace(4)))]

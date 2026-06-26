@@ -180,7 +180,7 @@ evaluate_visits<-function(visit_data
      ,JOIN_DATE
      ,DATE_GIVEN
      ,LAST_GIVEN=DATE_GIVEN
-     ,DOSE_COUNTER=DOSE_COUNTER
+     ,DOSE_IN_SERIES=ifelse(is.na(DOSE_COUNTER),1,DOSE_COUNTER+1)#DOSE_GIVEN CONVERSION
      ,DELAYED_LAST_DOSE=DELAYED
      ,NEXT_DOSE_MIN
      ,NEXT_DOSE_RECOMMENDED
@@ -202,7 +202,7 @@ evaluate_visits<-function(visit_data
    if(ant %in% c('HIB','PCV','POLIO','TETANUS','ROTA')){
       visit_antigen_eval[is.na(DATE_GIVEN),`:=`(NEXT_DOSE_MIN=DOB+wk_no_grace(6),NEXT_DOSE_RECOMMENDED=DOB+wk_no_grace(8))]
    }
-    else if(ant %in% c('COVID')){
+  else if(ant %in% c('COVID')){
       visit_antigen_eval[is.na(DATE_GIVEN),`:=`(NEXT_DOSE_MIN=DOB+yr_no_grace(1),NEXT_DOSE_RECOMMENDED=DOB+mon_no_grace(6))]
     }
    else if(ant %in% c('VZV','MMR','HEPA')){
@@ -233,7 +233,7 @@ evaluate_visits<-function(visit_data
     visit_antigen_eval[,AGE_OUT:=DOB+yr_no_grace(2)]
   }
    else if(ant %in% c('ROTA')){
-      visit_antigen_eval[,AGE_OUT:=DOB+mon_no_grace(8)]
+      visit_antigen_eval[,AGE_OUT:=pmin(DOSE_IN_SERIES==1,DOB+ROTA_MAX_AGE_START_DAYS+1,DOB+mon_no_grace(8))]#updated 6/25/2026
    }
    else
      visit_antigen_eval[,AGE_OUT:=DOB+yr_no_grace(20)]

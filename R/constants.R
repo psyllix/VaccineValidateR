@@ -24,6 +24,7 @@ YEAR_LENGTH <- 365.25
 MIN_INTERVAL_DEFAULT <- 24#applies grace period
 MIN_INTERVAL_LIVE <- 28
 MIN_INTERVAL_COVID_PFIZER <-17
+ROTA_MAX_AGE_START_DAYS<-(14*7)+6 # 14 weeks 6 days is last day to start
 
 #' Supported antigens
 #'
@@ -205,7 +206,7 @@ INVALID_DOSE_DEFS <- c(
 #' @keywords internal
 VISIT_RETURN_COLUMNS <- c(
   'STUDY_ID','VISIT_ID','VISIT_DATE','ANTIGEN',
-  'IS_VIRAL_SEASON','DOB','AGED_OUT','COMPLETED_PREVIOUSLY','DOSE_COUNTER',
+  'IS_VIRAL_SEASON','DOB','AGED_OUT','COMPLETED_PREVIOUSLY','DOSE_IN_SERIES',
   'NEXT_DOSE_MIN','NEXT_DOSE_RECOMMENDED','DUE','GIVEN','MISSED',
   'DELAYED_PRIOR_DOSE','DELAYED_VISIT_DOSE','DELAYED_NEXT_DOSE',
   'NEXT_GIVEN_DATE','NEXT_RCVD_15_DAYS','NEXT_RCVD_30_DAYS','NEXT_RCVD_90_DAYS'
@@ -227,7 +228,7 @@ VISIT_RETURN_DEFS <- c(
   DOB = "Date of birth of patient",
   AGED_OUT = "Flag if patient has exceeded eligible age for vaccine",
   COMPLETED_PREVIOUSLY = "TRUE if the series was completed before this visit",
-  DOSE_COUNTER = "Dose number in series",
+  DOSE_IN_SERIES = "Dose number in series, starts a 1 for first dose due",
   NEXT_DOSE_MIN = "Earliest allowable date for the next dose",
   NEXT_DOSE_RECOMMENDED = "Recommended date for the next dose",
   DUE = "TRUE if the vaccine dose is due at this visit",
