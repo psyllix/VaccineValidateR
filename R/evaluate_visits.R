@@ -72,7 +72,6 @@
 #'   \itemize{
 #'     \item All standardized columns in \code{VISIT_RETURN_COLUMNS}
 #'     \item All original columns from \code{visit_data}
-#'   }
 #' Temporary evaluation fields are excluded.
 #'
 #' @seealso \code{\link{validate_immunizations}}, \code{VISIT_RETURN_COLUMNS}
@@ -164,7 +163,6 @@ evaluate_visits<-function(visit_data
     if(verbose) message(paste0("Evaluating status of visits for ",ant," vaccination status. Starting ",Sys.time()))
     # Pull this antigen’s subset
     visit_antigen_eval <- data.table::copy(visit_data) #need all visits each time - even aged out visits
-    #this_antigen <- antigen_split[[ant]]
     this_antigen <- antigens[.(ant)]
     # Skip if missing or empty
     if (is.null(this_antigen) || nrow(this_antigen) == 0) {
@@ -180,13 +178,18 @@ evaluate_visits<-function(visit_data
      ,JOIN_DATE
      ,DATE_GIVEN
      ,LAST_GIVEN=DATE_GIVEN
-     ,DOSE_IN_SERIES=ifelse(is.na(DOSE_COUNTER),1,DOSE_COUNTER+1)#DOSE_GIVEN CONVERSION
+     #,DOSE_IN_SERIES=ifelse(is.na(DOSE_COUNTER),1,DOSE_COUNTER+1)#DOSE_GIVEN CONVERSION
+     ,DOSE_IN_SERIES=DOSE_COUNTER+1#DOSE_GIVEN CONVERSION
      ,DELAYED_LAST_DOSE=DELAYED
      ,NEXT_DOSE_MIN
      ,NEXT_DOSE_RECOMMENDED
      ,COMPLETED_PREVIOUSLY=DOSE_COMPLETES_SERIES#DID THE LAST DOSE COMPLETE THE SERIES
    )][visit_antigen_eval, on = .(STUDY_ID,JOIN_DATE), roll = Inf]
-    visit_antigen_eval[is.na(COMPLETED_PREVIOUSLY),COMPLETED_PREVIOUSLY:=FALSE]
+    
+    #CORRECT NA DUE TO FIRST DOSE NEVER DONE
+    visit_antigen_eval[is.na(COMPLETED_PREVIOUSLY),COMPLETED_PREVIOUSLY:=FALSE]#NO HX IMM cannot be previously complete
+    visit_antigen_eval[is.na(DOSE_IN_SERIES),DOSE_IN_SERIES:=1]#No Hx of IMM, dose given at visit would be dose 1
+    
     if(verbose) message(paste0("--Determine if a dose was given at the day of the visit and if so, was it delayed."))
     #now only on the visit date grab if an antigen dose was given - roll is not need
     visit_antigen_eval[,JOIN_DATE:=VISIT_DATE]
@@ -225,7 +228,8 @@ evaluate_visits<-function(visit_data
      visit_antigen_eval[is.na(DATE_GIVEN)==TRUE,NEXT_DOSE_MIN:=pmax(DOB+mon_no_grace(6),next_sept1(DOB))]
      visit_antigen_eval[is.na(DATE_GIVEN)==TRUE,NEXT_DOSE_RECOMMENDED:=NEXT_DOSE_MIN]
    }
-   #apply maximum ages
+   #apply maximum ages for visit level evaluations
+    #HIB/PCV END AT AGE 5
    if(ant %in% c('HIB','PCV')){
      visit_antigen_eval[,AGE_OUT:=DOB+yr_no_grace(5)]
    }
@@ -233,7 +237,7 @@ evaluate_visits<-function(visit_data
     visit_antigen_eval[,AGE_OUT:=DOB+yr_no_grace(2)]
   }
    else if(ant %in% c('ROTA')){
-      visit_antigen_eval[,AGE_OUT:=pmin(DOSE_IN_SERIES==1,DOB+ROTA_MAX_AGE_START_DAYS+1,DOB+mon_no_grace(8))]#updated 6/25/2026
+      visit_antigen_eval[,AGE_OUT:=ifelse(DOSE_IN_SERIES==1,DOB+ROTA_MAX_AGE_START_DAYS+1,DOB+mon_no_grace(8))]#updated 6/25/2026
    }
    else
      visit_antigen_eval[,AGE_OUT:=DOB+yr_no_grace(20)]

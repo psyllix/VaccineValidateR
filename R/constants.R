@@ -24,7 +24,8 @@ YEAR_LENGTH <- 365.25
 MIN_INTERVAL_DEFAULT <- 24#applies grace period
 MIN_INTERVAL_LIVE <- 28
 MIN_INTERVAL_COVID_PFIZER <-17
-ROTA_MAX_AGE_START_DAYS<-(14*7)+6 # 14 weeks 6 days is last day to start
+
+ROTA_MAX_AGE_START_DAYS<-(14*7)+6 # 14 weeks 6 days is last day to start ROTA
 
 #' Supported antigens
 #'

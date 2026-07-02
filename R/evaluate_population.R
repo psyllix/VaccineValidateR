@@ -69,7 +69,7 @@ evaluate_population<-function(patients,antigens,date_of_birth_column_name='DOB',
   patients[,HIB_HEDIS_CIS := (STUDY_ID %in% antigens[ANTIGEN=="HIB"&DOSE_COUNTER==3&AGE_IMM_GIVEN<yr_no_grace(2)]$STUDY_ID)]
   patients[,HIB_UTD_CIS := (STUDY_ID %in% antigens[ANTIGEN=="HIB"&DOSE_COMPLETES_SERIES&AGE_IMM_GIVEN<yr_no_grace(2)]$STUDY_ID)]
   patients[,HEPB_HEDIS_CIS := (STUDY_ID %in% antigens[ANTIGEN=="HEPB"&DOSE_COUNTER==3&AGE_IMM_GIVEN<yr_no_grace(2)]$STUDY_ID)]
-  patients[,HEPA_HEDIS_CIS := (STUDY_ID %in% antigens[ANTIGEN=="HEPA"&DOSE_COUNTER==2&AGE_IMM_GIVEN<yr_no_grace(2)]$STUDY_ID)]
+  patients[,HEPA_HEDIS_CIS := (STUDY_ID %in% antigens[ANTIGEN=="HEPA"&DOSE_COUNTER==1&AGE_IMM_GIVEN<yr_no_grace(2)]$STUDY_ID)]
   patients[,ROTA_HEDIS_CIS := (STUDY_ID %in% antigens[ANTIGEN=="ROTA"&DOSE_COMPLETES_SERIES&AGE_IMM_GIVEN<yr_no_grace(2)]$STUDY_ID)]#uses ANTIGEN LOGIC
   patients[,INFLUENZA_HEDIS_CIS := (STUDY_ID %in% antigens[ANTIGEN=="INFLUENZA"&DOSE_COUNTER==2&AGE_IMM_GIVEN<yr_no_grace(2)]$STUDY_ID)]
   
@@ -95,8 +95,8 @@ evaluate_population<-function(patients,antigens,date_of_birth_column_name='DOB',
     message("HEDIS_CIS7: By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, 3 HepB, 4 PCV, and Rota series completion (count-based).")
     message("UTD_CIS7: By age 2, child completed: DTaP, Polio, MMR, Varicella, Hib, HepB, PCV, and Rota (all series-completion based).")
     
-    message("HEDIS_CIS10: By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, 3 HepB, 4 PCV, Rota series, 2 Influenza, and 2 HepA (count-based).")
-    message("UTD_CIS10: By age 2, child completed: DTaP, Polio, MMR, Varicella, Hib, HepB, PCV, Rota, Influenza (2 doses), and HepA (2-dose series).")
+    message("HEDIS_CIS10: By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, 3 HepB, 4 PCV, Rota series, 2 Influenza, and 1 HepA.")
+    message("UTD_CIS10: By age 2, child completed: DTaP, Polio, MMR, Varicella, Hib, HepB, PCV, Rota, Influenza (2 doses), and 1 HepA.")
     
     # Adolescent measures
     message("HEDIS_ADOL2: By age 13, adolescent received 2 HPV, >=1 Tetanus dose age 10-13, and >=1 MCV dose age 11-13 (count-based).")
@@ -112,8 +112,8 @@ evaluate_population<-function(patients,antigens,date_of_birth_column_name='DOB',
     UTD_CIS3    = "By age 2, up to date as recommended for: DTaP, Polio, MMR, Varicella, Hib, HepB, and PCV series (using completion rules).",
     HEDIS_CIS7  = "By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, 3 HepB, 4 PCV, and Rota series completion (count-based).",
     UTD_CIS7    = "By age 2, up to date as recommended for: DTaP, Polio, MMR, Varicella, Hib, HepB, PCV, and Rota (all series-completion based).",
-    HEDIS_CIS10 = "By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, 3 HepB, 4 PCV, Rota series, 2 Influenza, and 2 HepA (count-based).",
-    UTD_CIS10   = "By age 2, up to date as recommended for: DTaP, Polio, MMR, Varicella, Hib, HepB, PCV, Rota, Influenza (2 doses), and HepA (2-dose series).",
+    HEDIS_CIS10 = "By age 2, child received 4 DTaP, 3 Polio, 1 MMR, 1 Varicella, 3 Hib, 3 HepB, 4 PCV, Rota series, 2 Influenza, and 1 HepA .",
+    UTD_CIS10   = "By age 2, up to date as recommended for: DTaP, Polio, MMR, Varicella, Hib, HepB, PCV, Rota, Influenza (2 doses), and 1 HepA.",
     HEDIS_ADOL2 = "By age 13, adolescent received 2 HPV, >=1 Tetanus dose age 10-13, and >=1 MCV dose age 11-13 (count-based).",
     UTD_ADOL2   = "By age 13, adolescent up to date as recommended for: HPV (series-based), is up to date on Tetanus (evaluated by series completion rules), and received MCV (>=1 dose age 10-13)."
   )
