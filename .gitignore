@@ -1,11 +1,24 @@
+# R session files
 .Rhistory
-.Rdata
+.RData
+.RDataTmp
+.Ruserdata
+
+# RStudio
 .Rproj.user/
+
+# R output/log files
 *.Rout
 *.log
-# Ignore data files
+
+# Local data and generated results
 data/
-# Ignore generated results
 results/
-.Rbuildignore   # ignore your R build ignore file itself
-vignettes/*.html   # compiled vignette outputs
+
+# R package build artifacts
+.Rcheck/
+*.tar.gz
+
+# Compiled vignette outputs
+vignettes/*.html
+vignettes/*.pdf
